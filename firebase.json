@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "site": "dss-multiservices",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "*.md"
+    ],
+    "cleanUrls": true,
+    "headers": [
+      {
+        "source": "**/*.@(png|svg|jpg|jpeg|webp|ico)",
+        "headers": [{ "key": "Cache-Control", "value": "public,max-age=604800" }]
+      },
+      {
+        "source": "/index.html",
+        "headers": [{ "key": "Cache-Control", "value": "public,max-age=300" }]
+      }
+    ]
+  }
+}
