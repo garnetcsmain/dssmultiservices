@@ -4,32 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>DSS Multiservices — Site en construction</title>
-<meta name="description" content="DSS Multiservices — entretien et services. Site en construction. info@dssmultiservices.com">
-<meta name="theme-color" content="#002A6F">
+<meta name="description" content="DSS Multiservices — entretien et nettoyage. Site en construction. info@dssmultiservices.com">
+<meta name="theme-color" content="#f2f7fa">
 <link rel="icon" href="brand/dss-mark.png">
 <style>
   :root{
     --navy:#002A6F;
     --teal:#017C92;
     --green:#5CAA40;
-    --ink:#eaf4f7;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;overflow:hidden;background:var(--navy)}
+  html,body{height:100%;overflow:hidden;background:#f2f7fa}
   body{
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
-    color:var(--ink);
+    color:var(--navy);
     -webkit-font-smoothing:antialiased;
     touch-action:none;
   }
 
-  /* ---------- fondo: aurora en movimiento ---------- */
-  .stage{position:fixed;inset:0;overflow:hidden}
-  .aurora{position:absolute;inset:-30%;filter:blur(70px);opacity:.85}
-  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen}
-  .b1{width:60vmax;height:60vmax;background:var(--teal);top:-15%;left:-10%;animation:drift1 22s ease-in-out infinite}
-  .b2{width:45vmax;height:45vmax;background:#0a4f9e;bottom:-20%;right:-10%;animation:drift2 27s ease-in-out infinite}
-  .b3{width:28vmax;height:28vmax;background:var(--green);top:45%;left:55%;opacity:.5;animation:drift3 19s ease-in-out infinite}
+  /* ---------- fondo claro con brillos de marca ---------- */
+  .stage{position:fixed;inset:0;overflow:hidden;background:
+    radial-gradient(120% 90% at 50% 0%,#ffffff 0%,#f4f9fb 45%,#e6eff4 100%)}
+  .aurora{position:absolute;inset:-30%;filter:blur(85px);opacity:.5}
+  .blob{position:absolute;border-radius:50%}
+  .b1{width:58vmax;height:58vmax;background:var(--teal);opacity:.16;top:-18%;left:-12%;animation:drift1 24s ease-in-out infinite}
+  .b2{width:44vmax;height:44vmax;background:var(--navy);opacity:.12;bottom:-22%;right:-12%;animation:drift2 29s ease-in-out infinite}
+  .b3{width:26vmax;height:26vmax;background:var(--green);opacity:.14;top:48%;left:58%;animation:drift3 20s ease-in-out infinite}
   @keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12%,8%) scale(1.15)}}
   @keyframes drift2{0%,100%{transform:translate(0,0) scale(1.05)}50%{transform:translate(-10%,-6%) scale(.9)}}
   @keyframes drift3{0%,100%{transform:translate(0,0)}50%{transform:translate(-18%,10%) scale(1.2)}}
@@ -38,57 +38,54 @@
   .content{
     position:relative;height:100%;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:clamp(18px,4vh,38px);
+    gap:clamp(18px,4vh,36px);
     padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
     text-align:center;
   }
 
   .logoWrap{position:relative;width:min(78vw,540px)}
-  .logo{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 40px rgba(0,0,0,.45))}
-  /* destello que barre el logo */
+  .logo{width:100%;height:auto;display:block;filter:drop-shadow(0 14px 34px rgba(0,42,111,.16))}
+  /* destello que barre el logo, recortado por su propia silueta */
   .shine{
     position:absolute;inset:0;pointer-events:none;opacity:0;
-    background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.85) 48%,rgba(255,255,255,.95) 52%,transparent 62%);
-    -webkit-mask:url(brand/dss-logo-white.png) center/contain no-repeat;
-            mask:url(brand/dss-logo-white.png) center/contain no-repeat;
+    background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.9) 48%,rgba(255,255,255,1) 52%,transparent 62%);
+    -webkit-mask:url(brand/dss-logo.png) center/contain no-repeat;
+            mask:url(brand/dss-logo.png) center/contain no-repeat;
   }
   .revealed .shine{animation:sweep 1.5s cubic-bezier(.25,.8,.3,1) .15s}
-  @keyframes sweep{0%{opacity:0;transform:translateX(-65%)}12%{opacity:1}100%{opacity:0;transform:translateX(65%)}}
+  @keyframes sweep{0%{opacity:0;transform:translateX(-65%)}12%{opacity:.9}100%{opacity:0;transform:translateX(65%)}}
 
   .tagline{
     font-size:clamp(10px,1.5vw,14px);letter-spacing:.34em;text-transform:uppercase;
-    font-weight:700;color:rgba(234,244,247,.75);
+    font-weight:700;color:var(--teal);
     opacity:0;transform:translateY(14px);
     max-width:100%;line-height:2;
   }
   .tagline .dot{color:var(--green);margin:0 .2em}
-  @media (max-width:560px){
-    .tagline{letter-spacing:.2em;font-size:10px}
-  }
+  @media (max-width:560px){ .tagline{letter-spacing:.2em;font-size:10px} }
 
   .status{
-    font-size:clamp(19px,4.2vw,30px);font-weight:300;letter-spacing:.01em;line-height:1.25;
+    font-size:clamp(19px,4.2vw,30px);font-weight:300;line-height:1.25;color:var(--navy);
     opacity:0;transform:translateY(14px);
   }
   .status b{font-weight:700;display:block;letter-spacing:-.01em}
   .status .en{
     display:block;margin-top:.4em;font-size:.55em;letter-spacing:.06em;
-    color:rgba(234,244,247,.6);font-weight:400;
+    color:rgba(0,42,111,.55);font-weight:400;
   }
 
   .contact{opacity:0;transform:translateY(14px)}
   .contact a{
     display:inline-flex;align-items:center;gap:.6em;
-    font-size:clamp(15px,2.6vw,19px);font-weight:600;letter-spacing:.01em;
+    font-size:clamp(15px,2.6vw,19px);font-weight:600;
     color:#fff;text-decoration:none;
-    padding:.85em 1.6em;border-radius:999px;
-    background:rgba(255,255,255,.09);
-    border:1px solid rgba(255,255,255,.28);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .25s,border-color .25s;
+    padding:.85em 1.7em;border-radius:999px;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);
+    box-shadow:0 10px 26px rgba(0,42,111,.24);
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;
   }
   .contact a:hover,.contact a:focus-visible{
-    background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.5);transform:translateY(-3px)
+    transform:translateY(-3px);box-shadow:0 16px 34px rgba(0,42,111,.3)
   }
   .contact svg{width:1.15em;height:1.15em;flex:none}
 
@@ -97,40 +94,40 @@
   .revealed .contact{animation:rise .8s cubic-bezier(.22,1,.36,1) .58s forwards}
   @keyframes rise{to{opacity:1;transform:translateY(0)}}
 
-  /* ---------- burbujas de jabón ---------- */
+  /* ---------- burbujas de jabón (visibles sobre claro) ---------- */
   .bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:3}
   .bubble{
     position:absolute;bottom:-14vh;border-radius:50%;
-    background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.92),rgba(255,255,255,.32) 42%,rgba(255,255,255,.05) 62%,transparent 72%);
-    box-shadow:inset -3px -5px 10px rgba(255,255,255,.35),0 0 14px rgba(255,255,255,.22);
+    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95),rgba(1,124,146,.10) 45%,rgba(1,124,146,.16) 70%,rgba(1,124,146,.05) 100%);
+    border:1px solid rgba(1,124,146,.22);
+    box-shadow:inset -4px -6px 12px rgba(255,255,255,.85),0 4px 14px rgba(0,42,111,.09);
     animation:float linear forwards;
   }
   @keyframes float{
     0%{transform:translate(0,0) scale(.55);opacity:0}
-    12%{opacity:.95}
-    85%{opacity:.75}
+    12%{opacity:.9}
+    85%{opacity:.7}
     100%{transform:translate(var(--dx),-118vh) scale(1);opacity:0}
   }
 
   /* ---------- vidrio sucio ---------- */
-  #glass{position:fixed;inset:0;z-index:5;cursor:none;transition:opacity .9s ease}
+  #glass{position:fixed;inset:0;z-index:5;cursor:none}
   .hint{
     position:fixed;left:50%;bottom:clamp(26px,7vh,64px);transform:translateX(-50%);
     z-index:6;pointer-events:none;text-align:center;
-    font-size:clamp(12px,2.4vw,15px);letter-spacing:.16em;text-transform:uppercase;font-weight:600;
-    color:rgba(255,255,255,.92);text-shadow:0 2px 14px rgba(0,0,0,.55);
+    font-size:clamp(12px,2.4vw,15px);letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+    color:#2b3a45;text-shadow:0 1px 10px rgba(255,255,255,.75);
     animation:pulse 2.4s ease-in-out infinite;transition:opacity .45s
   }
-  .hint small{display:block;margin-top:.5em;font-size:.8em;letter-spacing:.1em;opacity:.6;font-weight:400}
-  @keyframes pulse{0%,100%{opacity:.55;transform:translateX(-50%) translateY(0)}50%{opacity:1;transform:translateX(-50%) translateY(-5px)}}
+  .hint small{display:block;margin-top:.5em;font-size:.8em;letter-spacing:.1em;opacity:.6;font-weight:500}
+  @keyframes pulse{0%,100%{opacity:.6;transform:translateX(-50%) translateY(0)}50%{opacity:1;transform:translateX(-50%) translateY(-5px)}}
 
-  /* escobilla que sigue al cursor (solo desktop) */
   #squeegee{
     position:fixed;z-index:7;pointer-events:none;left:0;top:0;
     width:104px;height:26px;margin:-13px 0 0 -52px;opacity:0;transition:opacity .3s;
     border-radius:5px;
     background:linear-gradient(180deg,#dfe8ef 0%,#b9c6d2 46%,#8fa0ae 52%,#5d6b78 100%);
-    box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.8);
+    box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.85);
   }
   #squeegee::after{
     content:"";position:absolute;left:3px;right:3px;bottom:-7px;height:8px;border-radius:0 0 4px 4px;
@@ -139,8 +136,7 @@
   body.touch #squeegee{display:none}
   body.touch #glass{cursor:default}
 
-  .done #glass{opacity:0;pointer-events:none}
-  /* la animación pulse gana sobre una regla normal: hay que apagarla */
+  .done #glass{pointer-events:none}
   .hint.hide,.done .hint{opacity:0!important;animation:none!important}
   .done #squeegee{opacity:0!important}
 
@@ -163,7 +159,7 @@
 
 <main class="content" id="content">
   <div class="logoWrap">
-    <img class="logo" src="brand/dss-logo-white.png" alt="DSS Multiservices" width="827" height="443">
+    <img class="logo" src="brand/dss-logo.png" alt="DSS Multiservices" width="827" height="443">
     <div class="shine"></div>
   </div>
 
@@ -244,40 +240,37 @@
     cv.style.height = vh + 'px';
     ctx.globalCompositeOperation = 'source-over';
 
-    // capa base: vidrio empañado
+    // vidrio empañado sobre fondo claro
     const g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0,   'rgba(196,214,222,.96)');
-    g.addColorStop(.45, 'rgba(168,192,204,.97)');
-    g.addColorStop(1,   'rgba(142,170,186,.98)');
+    g.addColorStop(0,   'rgba(178,196,206,.95)');
+    g.addColorStop(.45, 'rgba(158,180,193,.96)');
+    g.addColorStop(1,   'rgba(134,160,176,.97)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // manchas de suciedad
     for (let i=0;i<190;i++){
       const x = Math.random()*W, y = Math.random()*H;
       const r = (14 + Math.random()*130) * dpr;
       const s = ctx.createRadialGradient(x, y, 0, x, y, r);
-      const tint = Math.random() > .55 ? '120,132,120' : '104,118,132';
-      s.addColorStop(0, `rgba(${tint},${.05 + Math.random()*.16})`);
+      const tint = Math.random() > .55 ? '118,130,118' : '100,114,128';
+      s.addColorStop(0, `rgba(${tint},${.05 + Math.random()*.17})`);
       s.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = s;
       ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
     }
-    // chorretones verticales
     ctx.lineCap = 'round';
     for (let i=0;i<26;i++){
       const x = Math.random()*W;
-      ctx.strokeStyle = `rgba(255,255,255,${.05 + Math.random()*.16})`;
+      ctx.strokeStyle = `rgba(255,255,255,${.06 + Math.random()*.18})`;
       ctx.lineWidth = (1 + Math.random()*4) * dpr;
       ctx.beginPath();
       ctx.moveTo(x, Math.random()*H*.25);
       ctx.bezierCurveTo(x+18*dpr, H*.4, x-18*dpr, H*.65, x+Math.random()*22*dpr, H);
       ctx.stroke();
     }
-    // gotas
     for (let i=0;i<70;i++){
       const x = Math.random()*W, y = Math.random()*H, r = (2+Math.random()*7)*dpr;
-      ctx.fillStyle = `rgba(255,255,255,${.12+Math.random()*.2})`;
+      ctx.fillStyle = `rgba(255,255,255,${.14+Math.random()*.22})`;
       ctx.beginPath(); ctx.ellipse(x, y, r, r*1.35, 0, 0, 7); ctx.fill();
     }
     ctx.globalCompositeOperation = 'destination-out';
@@ -294,7 +287,6 @@
   addEventListener('load', onResize);
   if (window.ResizeObserver) new ResizeObserver(onResize).observe(document.documentElement);
 
-  // borrar con brocha suave
   const R = () => (isTouch ? 62 : 78) * dpr;
   let last = null;
   function wipeAt(x, y){
@@ -308,7 +300,7 @@
       ctx.fillStyle = s;
       ctx.beginPath(); ctx.arc(px, py, r, 0, 7); ctx.fill();
     };
-    if (last){                     // interpolar para trazos rápidos
+    if (last){
       const dx = x-last.x, dy = y-last.y;
       const steps = Math.max(1, Math.hypot(dx,dy) / (r*.34) | 0);
       for (let i=1;i<=steps;i++) paint(last.x + dx*i/steps, last.y + dy*i/steps);
@@ -316,7 +308,6 @@
     last = {x, y};
   }
 
-  // ¿cuánto se ha limpiado?
   let checking = false;
   function checkProgress(){
     if (checking || cleared) return;
@@ -336,12 +327,27 @@
     });
   }
 
+  // Barrido final: en vez de desvanecer el canvas (que deja un parpadeo feo
+  // en algunos compositores), se termina de borrar la mugre desde el centro.
   function finish(){
     if (cleared) return;
     cleared = true;
     document.body.classList.add('done');
     document.getElementById('content').classList.add('revealed');
-    setTimeout(() => { cv.remove(); squeegee.remove(); }, 1100);
+
+    const cx = W/2, cy = H/2, max = Math.hypot(W, H)/2 + 40*dpr;
+    const t0 = performance.now(), dur = 620;
+    (function burst(now){
+      const p = Math.min(1, (now - t0) / dur);
+      const r = (1 - Math.pow(1 - p, 3)) * max;   // easeOutCubic
+      const s = ctx.createRadialGradient(cx, cy, r * .72, cx, cy, r);
+      s.addColorStop(0, 'rgba(0,0,0,1)');
+      s.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = s;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+      if (p < 1) requestAnimationFrame(burst);
+      else { cv.remove(); squeegee.remove(); }
+    })(t0);
   }
 
   let moves = 0;
@@ -365,7 +371,8 @@
   // demo automática: un barrido corto para que se entienda el gesto
   setTimeout(() => {
     if (cleared || moves > 0) return;
-    const cx = innerWidth/2, cy = innerHeight/2, span = Math.min(innerWidth*.3, 230);
+    const [vw, vh] = viewport();
+    const cx = vw/2, cy = vh/2, span = Math.min(vw*.3, 230);
     let t = 0;
     (function tease(){
       if (cleared || moves > 0) { last = null; return; }
