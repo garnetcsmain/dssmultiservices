@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap');
+:root{
+  --dss-navy:#003078;
+  --dss-teal:#007890;
+  --dss-green:#60a848;
+  --dss-ink:#14202e;
+  --dss-gray:#5b6b78;
+  --dss-border:#e2e8ee;
+  --dss-bg:#f4f6f8;
+  --dss-white:#ffffff;
+  /* dark surface */
+  --dss-dark-bg:#0a1524;
+  --dss-dark-teal:#7fd0dc;
+  --dss-dark-text:#f2f5f8;
+  --dss-dark-muted:#9fb0c0;
+  --dss-dark-border:#20344c;
+  --dss-font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --dss-display:'Manrope','Segoe UI',system-ui,sans-serif; /* @kind font */
+}
+body{font-family:var(--dss-font);color:var(--dss-ink)}
+a{color:var(--dss-teal);text-decoration:none}
+a:hover{text-decoration:underline}
