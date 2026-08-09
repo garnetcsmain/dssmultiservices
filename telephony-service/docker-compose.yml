@@ -1,0 +1,39 @@
+services:
+  telephony:
+    build: .
+    image: dss-telephony:latest
+    container_name: dss-telephony
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Container paths, overriding whatever the .env carried over from a laptop.
+      LOCAL_STORAGE_ROOT: /app/recordings
+      WHISPER_CLI_PATH: /usr/local/bin/whisper-cli
+      WHISPER_MODEL_PATH: /models/ggml-base-q5_0.bin
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      PORT: "8080"
+    ports:
+      # Bound to loopback only. Tailscale Funnel proxies from localhost, so the
+      # service must not also be reachable from the LAN - the webhook endpoints
+      # are authenticated but the archive is not something to expose broadly.
+      # Host 8090 because signal-cli already holds 8080 on maple.
+      - "127.0.0.1:8090:8080"
+    extra_hosts:
+      # Hermes' webhook platform binds the host loopback, which is not the
+      # container's loopback. This is how the bridge reaches it.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./recordings:/app/recordings
+      - ./deadletter:/app/deadletter
+      - ./models:/models:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

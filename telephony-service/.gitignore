@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Local recording working copies and the dead-letter queue.
+# These hold customer call audio - never commit them.
+recordings/
+deadletter/
+
+# Private key de la aplicacion Vonage - nunca commitear
+vonage-private.key

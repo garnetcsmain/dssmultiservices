@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+*.log
+recordings/
+deadletter/
+models/
+vonage-private.key
+scripts/
+README.md
