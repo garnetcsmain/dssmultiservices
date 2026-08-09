@@ -418,6 +418,14 @@ contact's 24-hour window needs an approved template, and none exists.
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
 - Three stale recordings on Twilio, including a consumed OTP
+- No real inbound call has ever run: voicemail, archive and the SMS
+  notification are untested against an actual caller
+- `WHISPER_LANGUAGE=en` in maple's `.env` transcribes French voicemail as
+  English; the code default is now `fr` but the deployment overrides it
+- Voice-note language has no setting that serves French, English and Spanish
+  at once — Spanish currently transcribes as nonsense
+- Hermes prompt tokens (~33k/message) remain unmeasured and appear on no
+  telephony invoice
 - The IVR is verified against the running service but has never carried a real
   call; ring timing under Rogers still needs re-measuring with the menu on
 - Outbound media has never been sent to a real handset — every message type is

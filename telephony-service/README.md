@@ -230,12 +230,9 @@ Vonage's patience, and a slow ack becomes a retry, which becomes a second agent
 run and a duplicate reply. `claimMessage` suppresses duplicates on top of that,
 bounded in memory — it defends against a retry burst, not a replay hours later.
 
-A `202` from Hermes means "queued, I will deliver myself", so this service stays
-quiet rather than answering as well. Unparseable output is treated the same way:
-sending a raw JSON blob to a customer is worse than sending nothing.
-
-Empty `HERMES_WEBHOOK_URL` leaves the bridge dormant — messages are still
-received, verified and logged, just not answered. That is the current state.
+`HERMES_BRAIN_ENABLED=0`, or an empty `HERMES_API_URL`, leaves the bridge
+dormant — messages are still received, verified, archived and logged, just not
+answered.
 
 Contract confirmed against the live API (v0.20.0), not inferred:
 
@@ -333,9 +330,10 @@ Note also that `WHISPER_LANGUAGE` (used for **calls**, not voice notes) is
 currently `en` in maple's `.env`, so a French voicemail is being transcribed as
 English today. The code default is now `fr`; the deployed env still overrides it.
 
-**The model currently points into `~/Projects/KazeApp`.** Copy
-`ggml-base-q5_0.bin` somewhere this service owns before relying on it — a sibling
-project moving its files should not break telephony.
+The model lives at `~/dss-telephony/models/ggml-base-q5_0.bin` on maple, mounted
+read-only at `/models`. It used to be borrowed from a sibling project's
+directory; it is now owned by this service, so nothing else moving its files can
+break telephony.
 
 Downmixing to mono loses which channel each speaker was on. For dual-channel
 call recordings where diarization matters, transcribe the two channels
@@ -424,19 +422,23 @@ working path.
 
 | | |
 |---|---|
-| Twilio number | `+1 450 235 8434` — Quebec, SMS/MMS/voice, no webhooks set |
-| Twilio balance | $18.85 USD |
-| Vonage number | `+1 226 277 0423` — Ontario, **not linked to any application** |
-| Vonage applications | **none** |
+| Twilio number | `+1 450 235 8434` — Quebec, SMS/MMS/voice, voice webhook live |
+| Vonage application | `8e711bd8` — `messages` capability, webhooks live |
+| WABA | `2105652107043268`, linked to the application |
+| WhatsApp sender | `+1 450 235 8434` — same number as voice, via BYON |
+| Display name | "Esperancita" — **pending Meta review** |
+| Vonage number | `+1 226 277 0423` — Ontario, linked to nothing, **still billing** |
 
-No Vonage application means there is no WhatsApp capability yet. An application
-(with the `messages` capability) is what carries the webhook URLs and links a
-number; a WhatsApp Business Account then has to be attached through Meta's
-Embedded Signup.
+The 450 carries voice on Twilio and WhatsApp on Vonage at the same time. That
+is BYON working as intended, not a misconfiguration.
 
 ### Runbook A — sandbox test (no Meta dependency)
 
-`.env` is already generated and set to sandbox mode. Three terminals:
+Historical: production BYON is live (Runbook B), so this is here for rebuilding
+the path from scratch, not for daily use. It needs a sandbox `.env` — the
+deployed one points at production and Basic auth no longer works there.
+
+Three terminals:
 
 ```bash
 cloudflared tunnel --url http://localhost:8080
@@ -522,19 +524,34 @@ Sandbox does not sign its webhooks, so it needs
 
 ## Still open
 
-- **`forwardTo` is blank.** `+1 450 235 8434` has a directory entry with no
-  destination, so voice calls hit the "not yet assigned" message. Fill it in
-  before the line goes live.
+- **No real call has run end to end.** Voicemail, the archive pipeline and the
+  SMS notification have never been exercised by an actual inbound call. The IVR
+  was verified against the running service with forged requests, not a phone.
+- **Nothing has been sent to a real handset.** Every WhatsApp message type is
+  built to Vonage's published shape; none is confirmed against a device.
+- **Rogers may answer before we do.** David's carrier diverts to its own
+  voicemail around 20–25s. If it wins, Twilio reports `completed`, our voicemail
+  branch never runs, and the message lands somewhere we never see — looking like
+  success in every log we keep. Ring time is held at 20s to stay under it; the
+  durable fix is disabling the carrier divert.
+- **Voice-note language is a coin toss for Spanish.** See the transcription
+  section — `auto` breaks French and a fixed `fr` breaks Spanish, and the
+  measurements behind that were on synthesised speech.
+- **`WHISPER_LANGUAGE=en` on maple** means French voicemails transcribe as
+  English today. The code default is now `fr`; the deployed `.env` overrides it.
+- **Hermes prompt tokens are unmeasured and could dominate.** ~33k per message
+  at last look, on no telephony invoice. Every reply logs `promptTokens`.
 - **Toll-free verification.** The requirement was truncated in the brief. Twilio's
-  review takes days and rejects vague use-case descriptions, so this is the long
-  pole on the support line.
+  review takes days and rejects vague use-case descriptions.
 - **The Vonage 226 number is billing for nothing.** `+1 226 277 0423` is linked to
   no application and is not the chosen WhatsApp number. Release it or repurpose it.
+- **Three stale recordings on Twilio**, including a consumed OTP.
 - **Retention period.** `RETENTION_DAYS` defaults to 365. Confirm against whatever
   DSS's actual record-keeping obligation is.
-- **No automated tests.** The archive pipeline and both signature verifiers were
-  checked by hand against a running instance. Worth a committed suite before this
-  handles real calls.
+- **Display name "Esperancita" pending Meta review.** A first-name-only display
+  name for a company account is the kind Meta rejects.
+- **The persona is an AI agent behind a human name and photo.** A disclosure line
+  in the WhatsApp About field is the cheap mitigation.
 - **WhatsApp pricing premise.** The brief's claim that Vonage offers cheaper
   per-conversation billing than Twilio does not hold — WhatsApp rates are set by
   Meta and apply across BSPs. Verify current rates before treating the split as a
