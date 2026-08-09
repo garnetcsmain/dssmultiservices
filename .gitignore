@@ -1,2 +1,5 @@
 .DS_Store
 .firebase/
+
+# Videos de formacion (NotebookLM) - demasiado pesados para git
+*.mp4

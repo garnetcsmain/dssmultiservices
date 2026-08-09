@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escuela CPEEP - DSS Multiservices</title>
+<style>
+:root{
+  --bg:#f6f4ef; --panel:#ffffff; --ink:#1e2430; --muted:#68707f; --line:#e3ded4;
+  --acc:#0f5ea8; --accsoft:#e3eefb; --fr:#8a4d0f; --frbg:#f7ecdc;
+  --ok:#1c7d47; --okbg:#e4f4ea; --meh:#9a6b00; --mehbg:#faf1d8; --mal:#b3261e; --malbg:#fbe7e5;
+  --cpeep:#5b3a8e; --client:#0f5ea8; --interno:#1c7d47; --empleado:#9a6b00; --sys:#68707f;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14171d; --panel:#1d222b; --ink:#e8e6df; --muted:#9aa2b1; --line:#2c3340;
+    --acc:#6aa9e0; --accsoft:#1d2c3d; --fr:#e0a35c; --frbg:#2e2418;
+    --ok:#5cc98a; --okbg:#16281d; --meh:#e0b74f; --mehbg:#2b2412; --mal:#e57373; --malbg:#301717; }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px}
+.hrow{max-width:1000px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+h1{font-size:17px;margin:0}
+h1 small{color:var(--muted);font-weight:normal}
+#countdown{font-size:13px;color:var(--mal);font-weight:600}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{border:1px solid var(--line);background:transparent;color:var(--ink);padding:7px 14px;border-radius:20px;cursor:pointer;font-size:14px}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
+.fr{color:var(--fr);font-style:italic;font-weight:600}
+.card,.mail,.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;padding:2px 9px;border-radius:10px;color:#fff;margin-right:8px;text-transform:uppercase}
+.tag.cpeep{background:var(--cpeep)}.tag.client{background:var(--client)}.tag.interno{background:var(--interno)}.tag.empleado{background:var(--empleado)}.tag.sys{background:var(--sys)}
+.mail h3{margin:6px 0 8px;font-size:15px}
+.frblock{background:var(--frbg);border-left:3px solid var(--fr);padding:10px 12px;border-radius:6px;margin:8px 0;font-style:italic}
+.gloss{font-size:13px;color:var(--muted);margin:6px 0;display:none}
+.gbtn{font-size:12px;background:none;border:1px dashed var(--muted);color:var(--muted);border-radius:8px;padding:2px 8px;cursor:pointer}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.choices button{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px}
+.choices button:hover{border-color:var(--acc)}
+.fb{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:14px}
+.fb.ok{background:var(--okbg);border-left:3px solid var(--ok)}
+.fb.meh{background:var(--mehbg);border-left:3px solid var(--meh)}
+.fb.mal{background:var(--malbg);border-left:3px solid var(--mal)}
+.real{margin-top:8px;font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.real b{color:var(--ink)}
+.meters{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.meter{flex:1;min-width:160px}
+.meter label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:3px}
+.bar div{height:100%;border-radius:4px;transition:width .4s}
+.daybtn{display:block;margin:16px auto 0;background:var(--acc);color:#fff;border:none;padding:11px 26px;border-radius:24px;font-size:15px;cursor:pointer}
+.daybtn:disabled{opacity:.4;cursor:default}
+.dayhead{display:flex;align-items:baseline;gap:12px;margin-top:6px}
+.dayhead h2{margin:0;font-size:20px}
+.dayhead span{color:var(--muted);font-size:13px}
+/* fichas */
+.ficha{min-height:230px;display:flex;flex-direction:column;justify-content:center;text-align:center;cursor:pointer;font-size:17px;padding:26px}
+.ficha .stk{font-size:13px;color:var(--mal);margin-top:14px}
+.ficha .lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.grade{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.grade button{padding:10px 22px;border-radius:22px;border:none;cursor:pointer;font-size:14px;color:#fff}
+.grade .no{background:var(--mal)}.grade .si{background:var(--ok)}
+.fprog{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:var(--bg)}
+.tools{overflow-x:auto}
+.copybtn{font-size:12px;border:1px solid var(--acc);color:var(--acc);background:none;border-radius:8px;padding:3px 10px;cursor:pointer;margin-top:6px}
+.copybtn.done{background:var(--ok);border-color:var(--ok);color:#fff}
+h2.sec{font-size:18px;margin:26px 0 4px}
+.note{font-size:13px;color:var(--muted)}
+.ok-t{color:var(--ok);font-weight:700}.meh-t{color:var(--meh);font-weight:700}.mal-t{color:var(--mal);font-weight:700}
+.debrief li{margin:6px 0;font-size:14px}
+ul{padding-left:20px}
+.pill{display:inline-block;background:var(--accsoft);color:var(--acc);border-radius:10px;padding:1px 10px;font-size:12px;font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>Escuela CPEEP <small>· DSS Multiservices</small></h1>
+    <span id="countdown"></span>
+    <nav id="nav"></nav>
+  </div>
+</header>
+<main id="view"></main>
+<script>
+"use strict";
+/* ============ estado ============ */
+var KEY="escuela-cpeep-v1";
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}} }
+function save(){ localStorage.setItem(KEY,JSON.stringify(S)); }
+var S=load(); S.tab=S.tab||"sim"; S.boxes=S.boxes||{}; S.sess=S.sess||0;
+
+/* «terme» -> resaltado FR */
+function fmt(s){ return s.replace(/«([^»]+)»/g,'<span class="fr">$1</span>'); }
+function P(s){ return s.split("\n\n").map(function(x){return "<p>"+fmt(x)+"</p>"}).join(""); }
+
+/* ============ FICHAS (glosario + reglas duras) ============ */
+var FI=[
+{f:"¿Qué es «le comité» (CPEEP)?",b:"El organismo paritario que fiscaliza el «décret» del sector de limpieza en la región de Montreal: fija los taux mínimos, cobra el «prélèvement» y tiene poder real de inspección y «réclamation».",st:"A QCM le reclamó $680.577 en 2021."},
+{f:"¿Cuándo y cómo se transmite el «rapport mensuel»?",b:"A más tardar el 15 de cada mes, por el «Portail CPEEP» (login con 2FA por email). Cubre el mes anterior — y se presenta AUNQUE no haya habido trabajo ese mes."},
+{f:"Llega una «demande de documents» de la inspectrice. ¿Primer gesto?",b:"Acusar recibo HOY aunque no tengas los documentos, y comprometer una fecha.",fr:"Bonjour, nous accusons réception de votre demande du 16 juillet. Nous vous transmettrons les documents demandés au plus tard le [date]. Merci de votre collaboration.",st:"QCM ignoró una demande en 2020: el comité construyó una réclamation de $680K solo con documentos de GDI."},
+{f:"«Prélèvement»: ¿cuánto y quién lo paga?",b:"1% de la masse salariale: 0,50% a cargo del empleador + 0,50% retenido al empleado en cada paie. Se remite con el rapport, a más tardar el 15."},
+{f:"¿La contribución «REER» del empleador entra en la base del prélèvement?",b:"SÍ. Cuenta como gain del salarié: entra en la base del 1% y también en la base de la «paie de vacances». Y ojo: el REER se paga como remise SEPARADA del prélèvement."},
+{f:"«REER» employeur: ¿tarifa y a quién aplica?",b:"$0,20 por hora pagada (desde mar-2026; antes $0,45). Aplica al «salarié permanent» (280 h trabajadas). Al cruzar el umbral: formulaire d'adhésion firmado antes del 15 del mes siguiente + retro de $56."},
+{f:"Un empleado te pide el pago en efectivo, «solo esta vez».",b:"NUNCA. Art. 10.01 del décret: cheque o virement bancaire, a intervalos máximos de 2 semanas. El efectivo destruye tu prueba de pago.",st:"Los pagos cash fueron la razón central por la que el CPEEP rechazó las pruebas de QCM en la réclamation que terminó en $100.000."},
+{f:"¿Se puede anular un «rapport» ya transmitido?",b:"NO. Doctrina dura del comité: lo declarado a los salariés se vuelve exigible. Solo existe el «rapport amendé», con instrucciones escritas del CPEEP y aprobación de David."},
+{f:"¿Cómo terminan las semanas del rapport?",b:"En sábado («semaines finissantes»), sobre calendario 4-4-5. El rapport se arma sobre el calendario del comité, no el de facturación. Este desfase fue LA fuente crónica de écarts de QCM."},
+{f:"¿Qué nombres se declaran en el rapport?",b:"EXACTAMENTE los que factura el «donneur d'ouvrage». Las variantes de nombres compuestos hispanos entre nómina y facturación fueron causa recurrente de écarts."},
+{f:"«Banque d'heures»: ¿cuál es la regla?",b:"Tope de heures régulières ~160 h/mes (40 h/semana; 158-192 según el mes 4-4-5). El excedente se banquea con documento firmado por el empleado Y un «avis écrit» al Comité paritaire ≥15 días antes (art. 3.01); máx. 4 semanas, ninguna semana >50 h. El registre y el rapport declaran las horas REALES — solo el pago se promedia."},
+{f:"¿Cómo se envían documentos al comité?",b:"PDF adjunto o papel. El comité RECHAZA enlaces de Google Drive y NO acepta fotos de cheques. Prueba de pago = recto/verso del cheque encaissé o «état de compte»."},
+{f:"Llega un mensaje de «TitanFile». ¿Qué haces?",b:"Descargar y archivar TODO al recibirlo. Los canales expiran (~12 meses) y el contenido se pierde."},
+{f:"¿A qué buzón deben llegar los códigos 2FA del Portail?",b:"A un buzón de ROL (conformite@dssmultiservices.com), nunca a uno personal. En QCM llegaban a una sola persona: punto único de falla."},
+{f:"«Classe A/B/C»: taux vigentes",b:"A y B: $23,25/h · C (travaux en hauteur): $23,90/h (desde 2026-03-04). Suben cada 1-nov hasta 2030 (nov-2026: $23,83 / $24,49)."},
+{f:"«Prime de nuit»",b:"$0,25/h hoy, sube a $0,50 el 1-nov-2026, $0,75 en 2027, $1,00 en 2028. Aplica si la mayoría del turno cae entre medianoche y las 8h."},
+{f:"«Chef d'équipe»",b:"Prima mínima del 2% del taux cuando supervisa o forma a 4 o más salariés."},
+{f:"Fechas anuales que se olvidan y cuestan caro",b:"31-oct: cierre del cálculo de «maladie» · 30-nov: aviso del excédent al empleado CON copia al CPEEP · 10-déc: pagarlo · 30-abr: cierre de la année de référence de vacances (el pago va antes de la salida en vacaciones de cada salarié) · enero: renovar la «lettre d'admission»."},
+{f:"«Infolettre»",b:"El boletín del CPEEP. Los cambios de taux entran en vigor EL MISMO DÍA del aviso — se aplican a nómina de inmediato."},
+{f:"«Conciliation»: ¿qué es?",b:"El cruce mensual de tu rapport contra las horas del «donneur d'ouvrage» (écarts marcados en amarillo). Es obligación contractual del avenant: responder, explicar por empleado y corregir si aplica."},
+{f:"«Réclamation»: ¿qué es y cómo se responde?",b:"Reclamo de dinero con número (AC…), monto y plazo. SIEMPRE responder dentro del plazo, aunque sea para pedir prórroga. Toda diferencia salarial lleva +20% de frais automáticos.",st:"Fuera de plazo → poursuite: así llegó QCM a la Transaction de $100.000."},
+{f:"¿Cuándo escalar a David? (la regla exacta)",b:"SOLO: réclamations nuevas, inspecciones, decisiones legales, «renonciation», negociación con el donneur d'ouvrage, autorización de pagos y rapports amendés. Todo lo demás lo resuelve el rol."},
+{f:"«Renonciation au bénéfice du temps écoulé»",b:"Renuncia a la prescripción que el CPEEP pide para no demandar de inmediato. La decide David con abogado. JAMÁS la firma el rol."},
+{f:"«Donneur d'ouvrage» y responsabilidad solidaria (art. 14)",b:"El cliente principal (GDI, Ménagez-Vous) responde SOLIDARIAMENTE por los salarios impagados de su subcontratista. Por eso fiscaliza tu conformité: es su propia exposición legal.",st:"GDI pagó $96.490 de la réclamation de QCM en 2021 con fondos que le retenía a QCM."},
+{f:"Responsabilidad personal de administradores (art. 22 a.1)",b:"Si la empresa no paga, el comité puede ir contra los administradores — en DSS, contra David personalmente."},
+{f:"¿Los inspecteurs pueden entrar sin avisar?",b:"Sí: «de droit et à toute heure raisonnable», a todo lugar de trabajo, y pueden copiar registros (art. 22 e)."},
+{f:"«Registre de paie» conforme",b:"Por empleado y por día, con hora precisa de inicio y fin; cada indemnité (férié, vacances, 6% de départ) consignada explícitamente. Conservar 3 años. Es LA prueba que el comité acepta."},
+{f:"NAS de un empleado nuevo",b:"Validar el checksum ANTES de capturarlo en el Portail.",st:"QCM tuvo 12 empleados bloqueados por NAS inválidos."},
+{f:"«Attestation» de conformité: ¿cómo se pide?",b:"A info@cpeep.qc.ca — sale en ~24 h (Martine Côté). Para licitaciones debe tener menos de 45-60 días.",fr:"Pourriez-vous nous transmettre une attestation de conformité pour l'entreprise 9535-8214 Québec inc.? Merci."},
+{f:"¿Cuántas «remises» se pagan y cómo?",b:"DOS separadas: el prélèvement y el REER. Recomendado: «paiement préautorisé» (enviar spécimen de chèque a info@cpeep.qc.ca). QCM nunca lo activó y pagó el precio en seguimiento de cheques."},
+{f:"El rapport de un mes sin actividad",b:"Se presenta igual: en el Portail, ir directo al «Sommaire du rapport», marcar cheque de 0$, «Sauvegarder» y «Envoyer». Y nunca dejar de producir rapports por falta de contratos sin hablar antes con un inspecteur (514 384-6640). Clave para los primeros meses de DSS."},
+{f:"¿Qué recibe David cada mes?",b:"UN one-pager: período, empleados y cambios, horas por clase, masse salariale, REER, prélèvement, total a autorizar, variances y recomendación. 30 min de revisión + 15 min de aprobación de pago."},
+{f:"La frontera QCM ↔ DSS",b:"Entidades distintas; el dossier #39454 nace limpio. NUNCA mezclar papel o datos de QCM: para el dossier de DSS, nada existe antes del 01-jul-2026.",st:"Riesgo mayor: responsabilidad de empleador sucesor — validar con abogado antes de asumir contratos o empleados de QCM."},
+{f:"Multas reales por no declarar",b:"Estatutario $50-200 por infracción, pero el costo observado contra QCM: $200-300 por chef + frais de justice $74-154 + contribution légale del 25%. Y cada MES cuenta como infracción distinta (art. 38).",st:"Los règlements negociados de QCM: entre $1.824 y $4.654 por dossier."},
+{f:"Días 1-3 del ciclo: ¿qué se pide y a quién?",b:"Las «heures détaillées» del período anterior al donneur d'ouvrage, por salarié y por site, semanas cerrando sábado. Si esperas el recordatorio Smartsheet del día ~12, ya vas tarde.",fr:"Pourriez-vous nous transmettre le relevé des heures détaillées par salarié et par site pour la période du [x] au [x] (semaines finissantes le samedi)? Merci."},
+{f:"Tras transmitir el rapport, ¿qué se hace con el «accusé de réception»?",b:"Reenviarlo al donneur d'ouvrage en 24 h (obligación del avenant GDI) y completar el Smartsheet de conformité con números REALES en los campos, no ceros con el detalle en comentarios."},
+{f:"¿Cuántos rapports mensuels conserva el Portail CPEEP y qué implica para el archivo probatorio?",b:"Solo los 15 últimos: al crear el 16.º, el más antiguo se borra de la lista. Por eso cada rapport se imprime a PDF inmediatamente después de «Envoyer» y se archiva en la carpeta del mes — el archivo probatorio nunca puede depender del portal. La «Date d'envoi» de la grilla es la «preuve d'envoi» oficial que se reenvía a GDI.",fr:"Les 15 derniers rapports mensuels seulement sont conservés sur le Portail.",st:"Sin el PDF archivado, DSS pierde su prueba de envío cuando el rapport sale de la lista."},
+{f:"¿Qué regla rige la «Semaine 1 (finissant le)» de cada rapport mensuel en el Portail?",b:"Debe terminar EXACTAMENTE 7 días después de la última fecha del rapport del mes anterior; cambiarla exige contactar antes al comité. Con paie quincenal los rapports son de 4 o 6 semanas, nunca 5. La primera «semaine finissant le» del primer rapport de DSS (agosto-2026) fija toda la serie.",fr:"Contactez le Comité paritaire avant si vous devez changer cette date!",st:"Una primera fecha mal elegida desalinea todos los rapports futuros con los períodos de paie."},
+{f:"El manual decía que el excedente de horas se «banquea con documento firmado por el empleado». ¿Qué exige realmente el «étalement des heures» (art. 3.01)?",b:"El documento firmado es necesario pero NO suficiente: además, beneficio compensatorio, base máxima de 4 semanas con promedio de 40 h, ninguna semana >50 h, y un «avis écrit» transmitido al Comité paritaire al menos 15 días ANTES de aplicarlo. Y el registre de paie y el rapport declaran las horas REALES de cada semana (ej. 60/20/60/20) — solo el PAGO se promedia.",fr:"Un avis écrit doit être transmis au Comité paritaire au moins 15 jours avant l'application de l'étalement.",st:"Sin el avis, cada excedente semanal es exigible como heure supplémentaire al +50% — y declarar horas alisadas es detectable por el mismo cruce con facturas que hundió a QCM."},
+{f:"¿Cómo se corrige un rapport mensuel ya transmitido (que no puede anularse)?",b:"Con un «rapport amendé»: lo declarado de más se pone en NEGATIVO, lo omitido se agrega (empleado olvidado → amendé solo con él; empleado declarado por error → amendé con todos sus datos en negativo). Es obligatorio llamar al comité ANTES de usar la función para recibir las consignas exactas.",fr:"Communiquer avec le Comité paritaire pour recevoir les consignes exactes pour amender un rapport.",st:"Es la única salida legal tras un envío — la doctrina del comité es que un rapport transmitido no se anula."},
+{f:"¿Un limpiador que factura como «travailleur autonome» con TPS/TVQ y cobra «à forfait» queda fuera del décret?",b:"No. La definición de «salarié» del art. 1 j) LDCC es de orden público y más amplia que la de otras leyes: los hechos mandan, no el contrato. El criterio del verdadero «entrepreneur indépendant» es asumir riesgo empresarial y negociar directo con clientes (4 criterios + 6 indicios del comité). La exclusión del «artisan» se pierde en cuanto hay un intermediario que retira ganancia — y solo una verificación del comité confirma el estatuto (acepta consultas anónimas).",fr:"Un travailleur autonome à l'emploi d'un entrepreneur en entretien ménager sera généralement considéré comme un salarié au sens de la LDCC et du décret.",st:"Modern Concept, 2019 CSC 28 (Cour suprême). DSS como subcontratista no puede pagar cuadrillas «autónomas» — es el esquema exacto que los tribunales desmontan."},
+{f:"¿Qué pasa si DSS contrata a un ex-empleado de QCM en el mismo sitio de trabajo sin interrupción?",b:"La doctrina oficial del «service continu» transfiere al nuevo empleador su fecha de ingreso y TODOS los beneficios: permanencia, banque de maladie y porcentaje de vacances. Contratarlo en un sitio distinto y con interrupción documentada reduce esa exposición; en el mismo edificio y sin pausa, la consolida.",st:"Complementa el riesgo de sucesión QCM→DSS (arts. 14.1-14.2 de la Loi: «l'ancien employeur et son ayant cause sont liés solidairement»)."},
+{f:"¿Cuál es el calendario correcto del excédent de la «banque de maladie»?",b:"31-oct: cierre del cálculo (el derecho al excédent se ADQUIERE ese día). 30-nov: aviso escrito a cada empleado CON copia al Comité paritaire (total al crédit, máximo acumulable, monto pagable). 10-déc: pago de las heures excédentaires. Fórmula: banque al 31-oct MENOS 60% de las horas de las últimas 4 semanas trabajadas.",st:"El excédent pagado es un «gain» que entra en la base de vacances del 30-abr siguiente."},
+{f:"¿Cuántos «congés fériés» corresponden según el estatus del salarié (décret vigente)?",b:"Permanent con menos de 1 año de service continu: 10. Permanent con 1 año o más: 12 (art. 7.01). Non-permanent: 8, con indemnité de 1/20 del salario de las 4 semanas completas previas sin heures supplémentaires (art. 7.07.1). Todo el personal nuevo de DSS será non-permanent sus primeras ~280 h → 8 fériés.",st:"El férié trabajado paga temps et demi ADEMÁS de la indemnité (mínimo 4 h)."},
+{f:"¿Qué datos operativos hacen falta para que los trámites REER no reboten?",b:"Número de régimen «15383CM001TP» (va en cada formulaire d'adhésion); fiduciaire IA Groupe Financier: 1 800 567-5670 / pension@ia.ca; autoadhesión rápida del salarié en ia.ca/monadhesion; buzones especializados adhesionsreer@cpeep.qc.ca (adhesiones) y remboursementREER@cpeep.qc.ca (retiros). El formulaire se firma al adquirir la permanence (280 h) y se transmite antes del 15 del mes siguiente, con contribución retroactiva (~$56).",st:"El retro está expresamente en el art. 6.102 al. 3 del décret."},
+{f:"¿Qué exención fiscal aplica a la masse salariale sujeta al décret?",b:"Está EXENTA de la cotisation CNESST «normes du travail» ante Revenu Québec, porque ya paga el prélèvement del 1% al comité; la cotización santé-sécurité (CNESST) sí sigue aplicando. Hay que configurarlo así en Desjardins Solutions Employeur para no cotizar doble.",st:"Ahorro directo en cada paie; ningún correo de QCM documentaba esta exención."}
+];
+
+/* ============ SIMULADOR ============ */
+var EV=[
+{d:1,type:"interno",from:"David",subj:"Arranque del mes",
+ body:"Acordate: días 1-3 le pedimos al «donneur d'ouvrage» las «heures détaillées» del período anterior. Semanas terminando el sábado, calendario 4-4-5. ¿Mandás el pedido?",
+ choices:[
+  {t:"FR: \"Bonjour, pourriez-vous nous transmettre le relevé des heures détaillées par salarié et par site pour la période du 29 juin au 2 août (semaines finissantes le samedi)? Merci.\"",v:"ok",dc:5,fb:"Pedido correcto: por salarié y por site, semanas cerrando sábado. Así se concilia después sin sorpresas."},
+  {t:"FR: \"Bonjour, pourriez-vous nous transmettre les heures du mois d'août (du 1er au 31)? Merci.\"",v:"meh",dr:10,fb:"Pediste el mes civil. El rapport se arma sobre las semanas del comité (terminan sábado); este desfase fue LA fuente crónica de écarts de QCM 2022-2024."},
+  {t:"Lo hago después, hay tiempo hasta el 15.",v:"mal",dr:15,flag:"late_hours",fb:"El único recordatorio externo llega alrededor del día 12 (Smartsheet automático de GDI). Si dependés de él, ya vas tarde."}]},
+{d:2,type:"cpeep",from:"M.-J. Hurtubise (inspectrice)",subj:"Dossier 39454 - Demande de documents",
+ frbody:"Bonjour, dans le cadre de l'ouverture de votre dossier, veuillez nous transmettre : 1) une copie de chaque facture émise depuis le début de vos opérations; 2) une copie du registre de paie depuis l'embauche du premier salarié (ou, à défaut, la preuve de chaque paiement); 3) les coordonnées complètes de chaque salarié affecté à l'entretien ménager. Veuillez nous transmettre le tout dans les meilleurs délais.",
+ gloss:"Piden: facturas desde el inicio de operaciones, el registre de paie (o pruebas de pago) y las coordenadas de cada empleado.",
+ choices:[
+  {t:"Acusar recibo HOY y comprometer fecha: \"Nous accusons réception de votre demande. Nous vous transmettrons le tout au plus tard le 12 août.\"",v:"ok",dc:10,fb:"Exacto. Aunque no tengas nada listo, el acuse con fecha comprometida cambia por completo cómo te trata el comité."},
+  {t:"Esperar a tener todo completo para responder de una vez.",v:"mal",dr:20,flag:"silent_demande",fb:"Dos semanas de silencio ante una demande es exactamente el patrón que hundió a QCM. El comité no espera: construye.",real:"En 2020 QCM ignoró una demande d'information durante meses. El CPEEP armó la réclamation AC029231 por <b>$680.577,92</b> usando SOLO los documentos de GDI, obtenidos «par requête»."},
+  {t:"Mandar mientras tanto papeles de QC Maintenance, que de eso hay de sobra.",v:"mal",dr:25,fb:"JAMÁS. QCM y DSS son entidades distintas y el dossier #39454 nace limpio: para DSS nada existe antes del 01-jul-2026. Mezclar papel de QCM contamina la frontera legal.",real:"El riesgo mayor de la transición es la <b>responsabilidad de empleador sucesor</b>: si DSS parece continuidad de QCM, hereda sus deudas con el comité."}]},
+{d:3,type:"empleado",from:"Empleado nuevo",subj:"¿Me pagás en efectivo esta semana?",
+ body:"\"Jefe, ¿esta semana me podés pagar en efectivo? Es solo por esta vez, tengo un tema con el banco.\"",
+ choices:[
+  {t:"No. Cheque o virement, sin excepciones (art. 10.01 del décret). Te ayudo a resolver lo del banco.",v:"ok",dc:5,fb:"Regla dura: salario por cheque o virement a intervalos máximos de 2 semanas. NUNCA efectivo — sin rastro bancario no tenés prueba de pago que el comité acepte."},
+  {t:"Bueno, solo por esta vez.",v:"mal",dr:20,dm:2000,fb:"Acabás de crear un pago sin prueba aceptable. El comité no acepta recibos informales ni fotos: solo registre de paie + rastro bancario.",real:"Los pagos en efectivo fueron la razón central por la que el CPEEP rechazó las pruebas de pago de QCM en la réclamation de 2025, que terminó en una Transaction de <b>$100.000</b>."},
+  {t:"Le pregunto a David a ver qué dice.",v:"meh",fb:"No hace falta: es regla dura del décret, no una decisión. Escalar TODO también es un error — el rol existe para resolver lo rutinario y escalar solo lo que el playbook dice."}]},
+{d:4,type:"client",from:"Ménagez-Vous / GDI",subj:"Relevé d'heures - juillet",
+ frbody:"Bonjour, veuillez trouver ci-joint le relevé des heures pour la période terminée le 2 août. Total : 312 heures. Détail : J. Morales - 128 h; M. Tremblay - 96 h; A. Ríos - 88 h.",
+ gloss:"Llegó el detalle de horas del cliente. Ojo: tu nómina dice \"Julia Morales-Herrera\", el cliente factura \"J. Morales\". Y falta Carlos Pérez, que trabajó la última semana.",
+ choices:[
+  {t:"Alinear ANTES con el cliente: mismo nombre exacto en ambos lados, y reclamar las horas del empleado faltante.",v:"ok",dc:5,fb:"Correcto. Los nombres declarados deben coincidir EXACTAMENTE con los facturados, y todo el que hizo entretien va en el rapport."},
+  {t:"Declarar tal cual llegó el relevé del cliente.",v:"meh",dr:10,flag:"mismatch",fb:"Declaraste con datos incompletos: el empleado faltante y la variante del nombre van a saltar en la conciliation — y un salarié no declarado es exactamente lo que el comité busca.",real:"Las variantes de nombres compuestos hispanos entre nómina y facturación fueron causa recurrente de écarts en QCM 2022-2024."},
+  {t:"Declarar con los nombres completos de mi nómina, ya se arreglará.",v:"meh",dr:5,flag:"mismatch",fb:"Mejor que ignorarlo, pero el écart contra lo facturado igual aparece. La alineación se hace ANTES de declarar, no después."}]},
+{d:5,type:"sys",from:"Portail CPEEP",subj:"Enregistrement d'un salarié - NAS invalide",
+ body:"El Portail rechaza el alta de un empleado: «NAS invalide». El empleado jura que el número es ese.",
+ choices:[
+  {t:"Validar el checksum del NAS y pedirle al empleado el documento original antes de recapturar.",v:"ok",fb:"Correcto: el NAS tiene dígito verificador (Luhn). Se valida ANTES de capturar.",real:"QCM llegó a tener <b>12 empleados bloqueados</b> en el Portail por NAS inválidos, con rapports incompletos por meses."},
+  {t:"Capturar un número parecido para poder avanzar y corregir después.",v:"mal",dr:25,fb:"Eso es un rapport con datos falsos (art. 34) — multa por chef d'infraction. Y \"corregir después\" implica un rapport amendé con proceso formal."},
+  {t:"Dejar a ese empleado fuera del rapport este mes.",v:"mal",dr:15,fb:"Todo el que hizo entretien ménager va en el rapport. Un salarié omitido = subdeclaración, el patrón que el comité cruza contra las facturas del cliente."}]},
+{d:6,type:"interno",from:"Nómina (Desjardins)",subj:"Un empleado cerró el mes con 176 horas",
+ body:"El tope de heures régulières del mes (regla base ~160 h) quedó superado: 176 h. ¿Cómo lo tratamos en la paie y el rapport?",
+ choices:[
+  {t:"Banquear el excedente en la «banque d'heures» con documento firmado por el empleado, y liquidarlo después.",v:"ok",dc:5,fb:"Bien — y ojo al detalle oficial (art. 3.01): además de la firma del empleado hace falta un «avis écrit» al Comité paritaire ≥15 días antes del étalement, y el rapport declara las horas REALES (solo el pago se promedia). El relevé de banque acompaña la conciliation."},
+  {t:"Pagarlas todas como horas regulares y listo.",v:"meh",dr:5,fb:"Pagable, pero rompe la conciliación con el rapport y el relevé de banque que el donneur d'ouvrage espera (archivo \"3. EMPRESA BANQUE período.pdf\")."},
+  {t:"Declarar 160 y que las otras 16 no existan.",v:"mal",dr:25,dm:3000,fb:"Subdeclaración: la palabra que resume la peor era de QCM.",real:"En 2023 QCM declaró 49.015 h mientras facturaba 70.184 solo a GDI. GDI cuantificó el écart (21.169 h) en una réclamation potencial de <b>~$620.000</b>."}]},
+{d:8,type:"interno",from:"David",subj:"¿Cómo vamos con el comité?",
+ body:"David pregunta cómo va el mes. ¿Qué le mandás?",
+ choices:[
+  {t:"Un one-pager: período, empleados y cambios, horas por clase, masse salariale, REER + prélèvement, total a autorizar, variances y mi recomendación.",v:"ok",dc:5,fb:"Ese es el modelo: David revisa 30 minutos y aprueba. Pre-masticado, decisión binaria."},
+  {t:"Reenviarle los 14 correos y los 3 Excel del mes.",v:"meh",fb:"David no es el operador del comité — nunca lo fue, ni en QCM. Reenviarle crudo es transferirle tu trabajo, no escalarlo."},
+  {t:"\"Todo bien, 100% conforme.\"",v:"mal",dr:10,fb:"Sin datos, esa frase es la que después duele.",real:"El 29-jul David le declaró a GDI \"officiellement 100% conforme\" — prematuro: sin numéro d'employeur y con los 3 documentos de la demande sin entregar. Las frases absolutas se pagan."}]},
+{d:10,type:"client",from:"GDI - SQC Conformité",subj:"Documents requis - registre de paie",
+ frbody:"Bonjour, dans le cadre de notre processus de conformité, veuillez nous transmettre une copie de votre registre de paie pour la période de juillet. Merci.",
+ gloss:"GDI pide el registre de paie de julio. ¿Cómo lo enviás?",
+ choices:[
+  {t:"PDF adjunto por email, con la info sensible mínima necesaria.",v:"ok",fb:"PDF adjunto: el formato que todos aceptan. Y siempre el mínimo de datos personales necesario."},
+  {t:"Un enlace de Google Drive, más cómodo.",v:"mal",dr:5,dc:-5,fb:"El comité rechaza enlaces de Google Drive por política de seguridad (y los donneurs d'ouvrage suelen seguir la misma regla). Un rechazo = días perdidos con deadline corriendo."},
+  {t:"Fotos de los cheques por el chat.",v:"mal",dr:10,fb:"El comité NO acepta fotos de cheques. Prueba de pago válida: recto/verso del cheque encaissé o état de compte bancario."}]},
+{d:11,type:"sys",from:"Armado del rapport",subj:"¿Sobre qué base calculás el prélèvement (1%)?",
+ body:"Estás armando el rapport en el Portail. Masse salariale del mes: $7.240. Contribución «REER» employeur: $62. ¿Cuál es la base del 1%?",
+ choices:[
+  {t:"$7.302 - masse salariale MÁS la contribución REER del empleador.",v:"ok",fb:"Correcto. Guide de l'employeur: «La contribution de l'employeur au REER est considérée comme un gain pour le salarié. Elle doit donc être incluse dans le calcul du prélèvement ainsi que dans le calcul de la paie de vacances annuelle.»"},
+  {t:"$7.240 - solo los salarios brutos.",v:"meh",dr:5,fb:"Casi: la contribución REER del empleador cuenta como gain del salarié y entra en la base del prélèvement (y de la paie de vacances). Diferencia chica que se acumula mes a mes — y el comité la suma al próximo pago."},
+  {t:"El neto pagado a los empleados.",v:"mal",dr:10,fb:"No: siempre sobre montos brutos. El prélèvement es 1% de la masse salariale (incluido el REER employeur), mitad y mitad."}]},
+{d:12,type:"sys",from:"Smartsheet GDI (automático)",subj:"Rappel - rapport mensuel et conciliation",req:"late_hours",
+ body:"Llega el recordatorio automático del donneur d'ouvrage... y recién hoy estás pidiendo las «heures détaillées». Quedan 3 días.",
+ choices:[
+  {t:"Pedir las horas YA con disculpa y armar el rapport contrarreloj.",v:"meh",dr:10,fb:"Vas a llegar con lo justo y sin margen para conciliar nombres ni banque d'heures. Moraleja: los días 1-3 no son decorativos.",real:"QCM operaba exactamente así: rapport sistemáticamente ~12 días tarde, solo tras el rappel de GDI. En picos: 7+ rappels por mes."}]},
+{d:12,type:"cpeep",from:"CPEEP",subj:"Rappel - demande de documents sans réponse",req:"silent_demande",
+ frbody:"Bonjour, nous n'avons reçu aucune réponse à notre demande du début du mois. Sans réponse de votre part dans les 10 jours, le dossier sera transmis pour les suites appropriées.",
+ gloss:"El comité avisa: sin respuesta en 10 días, el dossier escala (mise en demeure / réclamation).",
+ choices:[
+  {t:"Responder HOY: acusar recibo, disculparse por la demora y comprometer fecha firme.",v:"meh",dr:5,dc:-10,dm:1824,fb:"Recuperás algo, pero la primera impresión ante el comité ya quedó: no-colaboración. Con la historia del grupo, esa etiqueta cuesta doble.",real:"Los dossiers pénaux de QCM por silencio administrativo cerraron en règlements de <b>$1.824 a $4.654</b> cada uno — más la lupa permanente."}]},
+{d:13,type:"sys",from:"Decisión de envío",subj:"El rapport está listo. ¿Cuándo lo transmitís?",
+ body:"Es día 13. El rapport cuadra contra nómina y contra las horas del cliente. ¿Qué hacés?",
+ choices:[
+  {t:"Transmitir HOY por el Portail y guardar la preuve d'envoi.",v:"ok",dc:5,fb:"El 15 es límite legal, no objetivo. Transmitir con margen cubre imprevistos (2FA que no llega, portal caído, corrección de último minuto)."},
+  {t:"Esperar al 15, por si aparece algún cambio.",v:"meh",dr:5,fb:"Jugás sin margen: si el código 2FA no llega o el portal falla el 15, el rapport queda tarde — y cada mes tarde cuenta como infracción distinta (art. 38)."},
+  {t:"Casi no hubo trabajo este mes... ¿hará falta rapport?",v:"mal",dr:10,fb:"Se presenta IGUAL: «même dans les cas où aucun travail n'a été effectué». Un mes sin rapport = infracción, aunque la actividad haya sido cero."}]},
+{d:14,type:"interno",from:"Vos mismo, con pánico",subj:"Transmitiste con un error en las horas de un empleado",
+ body:"Detectás que declaraste 88 h para un empleado que hizo 96. El rapport ya fue transmitido. ¿Qué hacés?",
+ choices:[
+  {t:"Contactar al CPEEP por escrito, pedir instrucciones para un «rapport amendé» y avisarle a David.",v:"ok",fb:"Único camino correcto: amendment con instrucciones escritas del comité + aprobación de David (es una corrección material)."},
+  {t:"Anular el rapport y volver a enviarlo corregido.",v:"mal",dr:10,fb:"No existe anular. Un rapport transmitido no se puede anular ni suspender: lo declarado se volvió exigible.",real:"QCM aprendió esta doctrina en 2022, cuando intentó anular rapports del contador externo: el comité convirtió lo declarado en réclamation civile."},
+  {t:"Dejarlo así y compensar el mes que viene.",v:"mal",dr:15,fb:"Las horas de cada mes van en su mes (semanas finissantes). \"Compensar después\" = dos rapports incorrectos en vez de uno."}]},
+{d:15,type:"sys",from:"Remises",subj:"Hay que pagar el prélèvement y el REER",
+ body:"Rapport transmitido. Toca pagar las «remises». ¿Cómo?",
+ choices:[
+  {t:"Dos pagos separados (prélèvement y REER) hoy mismo, y de paso activar el «paiement préautorisé».",v:"ok",dc:5,fb:"Regla de los dos pagos separados (vigente desde 2023) + preautorizado para no perseguir cheques nunca más. QCM jamás lo activó y pagó el precio."},
+  {t:"Un solo cheque combinado por el total.",v:"meh",dr:5,fb:"El comité exige remises separadas para prélèvement y REER. Los cheques combinados de QCM en 2023 generaron una historia de pagos confusa que resurgió en réclamations."},
+  {t:"Pagar la semana que viene, primero el cash-flow.",v:"mal",dr:15,fb:"La remise acompaña al rapport, a más tardar el 15. Los micro-faltantes no desaparecen: el comité los suma al próximo pago — y no pagar prélèvement es infracción por mes."}]},
+{d:16,type:"cpeep",from:"CPEEP",subj:"Accusé de réception - rapport mensuel",
+ frbody:"Bonjour, nous accusons réception de votre rapport mensuel pour la période terminée le 2 août. Merci.",
+ gloss:"Llegó el acuse del comité. ¿Y ahora?",
+ choices:[
+  {t:"Reenviarlo al donneur d'ouvrage en 24 h y completar el Smartsheet con los números reales.",v:"ok",dc:5,fb:"Las dos obligaciones del avenant: acuse reenviado en 24 h + Smartsheet de conformité con números REALES en los campos."},
+  {t:"Archivarlo y listo, ya cumplí con el comité.",v:"meh",dr:5,fb:"Con el comité sí, con el contrato no: el avenant GDI exige reenviar el accusé al donneur d'ouvrage. Su conformité es condición de pago (clause 6.8)."},
+  {t:"Llenar el Smartsheet con 0 en los campos y poner el detalle en comentarios.",v:"mal",dr:10,fb:"Patrón real de QCM: campos en cero, detalle en comentarios. Pasa desapercibido... hasta la auditoría. Los campos llevan los números reales."}]},
+{d:18,type:"client",from:"GDI - Conciliation",subj:"Écarts - conciliation juillet",req:"mismatch",
+ frbody:"Bonjour, veuillez trouver ci-joint la conciliation de juillet. Deux écarts surlignés en jaune : 1) \"J. Morales\" - 128 h facturées vs salarié introuvable dans votre rapport; 2) un salarié facturé la semaine du 27 juillet n'apparaît pas. Veuillez corriger.",
+ gloss:"La conciliation marcó en amarillo los dos problemas que dejaste pasar el día 4: el nombre no coincide y falta un empleado.",
+ choices:[
+  {t:"Responder con el detalle por empleado, transmitir la corrección que el CPEEP indique y alinear nombres para el próximo mes.",v:"meh",dr:5,fb:"Se resuelve, pero ahora implica correspondencia extra, posible rapport amendé y un mes de conciliation abierto. Todo esto era evitable el día 4.",real:"En QCM, meses de conciliation sin cerrar generaban doble pedido de GDI y pagos retenidos: <b>$153.000 retenidos</b> al 31-août-2024 hasta regularizar."}]},
+{d:18,type:"client",from:"GDI - Conciliation",subj:"Conciliation juillet - conforme",not:"mismatch",
+ frbody:"Bonjour, la conciliation de juillet est conforme : aucun écart entre les heures facturées et votre rapport. Merci.",
+ gloss:"Conciliation limpia: cero écarts. Esto es lo que compra la alineación del día 4.",
+ choices:[
+  {t:"Archivar la evidencia del mes (carpeta estándar) y cerrar el checklist.",v:"ok",dc:10,fb:"Mes cerrado con evidencia completa: rapport + preuve d'envoi + remises + conciliation conforme. Esto, repetido 12 veces, es TODO el trabajo."}]}
+];
+
+/* ============ motor simulador ============ */
+function simInit(){ return {day:0,r:0,c:60,m:0,done:{},flags:{},ledger:[],fin:false}; }
+function applicable(e,st){ return (!e.req||st.flags[e.req]) && (!e.not||!st.flags[e.not]); }
+function nextDay(st){ var days=[]; EV.forEach(function(e){ if(e.d>st.day && applicable(e,st) && days.indexOf(e.d)<0) days.push(e.d); }); days.sort(function(a,b){return a-b}); return days.length?days[0]:null; }
+function dayEvents(st){ return EV.filter(function(e){ return e.d===st.day && applicable(e,st); }); }
+function evKey(e){ return e.d+"|"+e.subj; }
+
+function renderSim(){
+  var st=S.sim; var el=document.getElementById("view"); var h="";
+  h+='<div class="meters">';
+  h+=meter("Risque CPEEP",st?st.r:0,100,"var(--mal)");
+  h+=meter("Confiance du comité",st?st.c:60,100,"var(--ok)");
+  h+='<div class="meter"><label><span>$ en juego evitable</span><span>$'+(st?st.m.toLocaleString():"0")+'</span></label><div class="bar"><div style="width:'+(st?Math.min(100,st.m/50):0)+'%;background:var(--meh)"></div></div></div>';
+  h+='</div>';
+  if(!st||st.day===0){
+    h+='<div class="card"><h2 style="margin-top:0">Un mois dans la peau du coordonnateur</h2>'
+      +P("Es tu primer mes manejando «le comité» para DSS. Cada día llegan correos reales: el cliente escribe en francés, el equipo en español, y el CPEEP no perdona. Tomás decisiones; las consecuencias — con los dólares de la historia real de QC Maintenance — llegan días después, como en la vida.\n\nNo hay respuestas libres: elegís entre opciones. Errar acá es gratis; en la vida real costó $680.000.")
+      +'<button class="daybtn" onclick="startSim()">Commencer - Jour 1</button></div>';
+    el.innerHTML=h; return;
+  }
+  if(st.fin){ el.innerHTML=h+debrief(st); return; }
+  h+='<div class="dayhead"><h2>Jour '+st.day+'</h2><span>de 20 - agosto simulado</span></div>';
+  var evs=dayEvents(st); var allDone=true;
+  evs.forEach(function(e){
+    var k=evKey(e); var d=st.done[k];
+    h+='<div class="mail"><span class="tag '+e.type+'">'+({cpeep:"CPEEP",client:"Client",interno:"Interno",empleado:"Empleado",sys:"Sistema"})[e.type]+'</span><b>'+e.from+'</b>';
+    h+='<h3>'+fmt(e.subj)+'</h3>';
+    if(e.frbody){ h+='<div class="frblock">'+e.frbody+'</div>'
+      +'<button class="gbtn" onclick="tgloss(this)">Qu\'est-ce qu\'on me demande? (ES)</button><div class="gloss">'+fmt(e.gloss||"")+'</div>'; }
+    if(e.body){ h+=P(e.body); }
+    if(!d){ allDone=false; h+='<div class="choices">';
+      e.choices.forEach(function(c,i){ h+='<button onclick="choose(\''+encodeURIComponent(k)+'\','+i+')">'+fmt(c.t)+'</button>'; });
+      h+='</div>';
+    } else {
+      var c=e.choices[d.i];
+      h+='<div class="fb '+c.v+'"><b>'+({ok:"Bien.",meh:"Mmm.",mal:"Error."})[c.v]+'</b> '+fmt(c.fb);
+      if(c.real) h+='<div class="real"><b>El caso real:</b> '+c.real+'</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  var nd=nextDay(st);
+  h+='<button class="daybtn" '+(allDone?"":"disabled")+' onclick="endDay()">'+(nd?"Fin de journée -> Jour "+nd:"Terminer le mois - débrief")+'</button>';
+  if(!allDone) h+='<p class="note" style="text-align:center">Respondé todo lo del día para avanzar.</p>';
+  el.innerHTML=h;
+}
+function meter(name,val,max,color){ return '<div class="meter"><label><span>'+name+'</span><span>'+val+'</span></label><div class="bar"><div style="width:'+Math.max(0,Math.min(100,val/max*100))+'%;background:'+color+'"></div></div></div>'; }
+function startSim(){ S.sim=simInit(); S.sim.day=1; save(); renderSim(); }
+function choose(k,i){ k=decodeURIComponent(k); var st=S.sim;
+  var e=EV.filter(function(x){return evKey(x)===k})[0]; if(!e||st.done[k])return;
+  var c=e.choices[i];
+  st.r=Math.max(0,Math.min(100,st.r+(c.dr||0)));
+  st.c=Math.max(0,Math.min(100,st.c+(c.dc||0)));
+  st.m+=(c.dm||0);
+  if(c.flag) st.flags[c.flag]=true;
+  st.done[k]={i:i}; st.ledger.push({s:e.subj,t:c.t,v:c.v});
+  save(); renderSim();
+}
+function endDay(){ var st=S.sim; var nd=nextDay(st); if(nd){st.day=nd;}else{st.fin=true;} save(); renderSim(); window.scrollTo(0,0); }
+function tgloss(btn){ var g=btn.nextElementSibling; g.style.display=g.style.display==="block"?"none":"block"; }
+function debrief(st){
+  var ok=st.ledger.filter(function(l){return l.v==="ok"}).length,
+      meh=st.ledger.filter(function(l){return l.v==="meh"}).length,
+      mal=st.ledger.filter(function(l){return l.v==="mal"}).length;
+  var verdict;
+  if(st.r<=15) verdict="El comité no tiene nada que recordar de ti. Con la historia que carga este grupo, ser aburrido y puntual no es una virtud menor: es la única estrategia disponible.";
+  else if(st.r<=45) verdict="Sobreviviste, pero dejaste huellas: écarts, respuestas al límite, algún patrón que el comité ya vio antes en QCM. El mes que viene, los días 1-4 deciden todo.";
+  else verdict="Este mes, en la vida real, habría activado la lupa del comité: rappels, conciliation abierta y probablemente una visita. QCM operó años así — terminó en $680K reclamados, 4 causas penales y una Transaction de $100K.";
+  var h='<div class="card debrief"><h2 style="margin-top:0">Débrief du mois</h2>'
+    +'<p><span class="ok-t">'+ok+' correctas</span> · <span class="meh-t">'+meh+' a medias</span> · <span class="mal-t">'+mal+' errores</span> · $ evitable en juego: <b>$'+st.m.toLocaleString()+'</b></p>'
+    +'<p>'+fmt(verdict)+'</p><ul>';
+  st.ledger.forEach(function(l){ h+='<li><span class="'+l.v+'-t">'+({ok:"OK",meh:"~",mal:"X"})[l.v]+'</span> <b>'+fmt(l.s)+'</b><br><span class="note">'+fmt(l.t)+'</span></li>'; });
+  h+='</ul><button class="daybtn" onclick="startSim()">Rejouer le mois</button>'
+    +'<p class="note" style="text-align:center">Segunda pasada recomendada: tomá a propósito los caminos que no probaste.</p></div>';
+  return h;
+}
+
+/* ============ fichas ============ */
+function dueDeck(){
+  var idx=FI.map(function(_,i){return i});
+  idx.sort(function(a,b){ return (S.boxes[a]||0)-(S.boxes[b]||0) || a-b; });
+  return idx.slice(0,15);
+}
+var fq=null,fpos=0,fflip=false;
+function renderFichas(){
+  var el=document.getElementById("view");
+  if(!fq){ fq=dueDeck(); fpos=0; fflip=false; }
+  var mastered=FI.filter(function(_,i){return (S.boxes[i]||0)>=3}).length;
+  if(fpos>=fq.length){
+    el.innerHTML='<div class="card" style="text-align:center"><h2>Listo por hoy</h2>'
+      +'<p>Sesión '+(S.sess+1)+' completa. Dominadas: <b>'+mastered+' / '+FI.length+'</b> fichas.</p>'
+      +'<p class="note">La repetición espaciada hace el resto: 10 minutos por día valen más que una hora el domingo.</p>'
+      +'<button class="daybtn" onclick="S.sess++;save();fq=null;renderFichas()">Otra ronda</button></div>';
+    return;
+  }
+  var i=fq[fpos], c=FI[i];
+  var h='<div class="fprog">Ficha '+(fpos+1)+' / '+fq.length+' · dominadas '+mastered+'/'+FI.length+'</div>';
+  h+='<div class="card ficha" onclick="fflip=!fflip;renderFichas()">';
+  if(!fflip){ h+='<div class="lbl">Pregunta - tocá para voltear</div><div>'+fmt(c.f)+'</div>'; }
+  else{
+    h+='<div class="lbl">Respuesta</div><div>'+fmt(c.b)+'</div>';
+    if(c.fr) h+='<div class="frblock" style="text-align:left;font-size:15px">'+c.fr+'</div>';
+    if(c.st) h+='<div class="stk">'+fmt(c.st)+'</div>';
+  }
+  h+='</div>';
+  if(fflip){ h+='<div class="grade"><button class="no" onclick="grade('+i+',false)">No lo sabía</button><button class="si" onclick="grade('+i+',true)">Lo sabía</button></div>'; }
+  else h+='<div class="fprog">Decí la respuesta en voz alta antes de voltear — incluido el francés.</div>';
+  document.getElementById("view").innerHTML=h;
+}
+function grade(i,pass){ S.boxes[i]=pass?Math.min(4,(S.boxes[i]||0)+1):0; save(); fpos++; fflip=false; renderFichas(); }
+
+/* ============ referencia ============ */
+function copyT(btn,t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){btn.classList.add("done");btn.textContent="Copiado";setTimeout(function(){btn.classList.remove("done");btn.textContent="Copiar"},1500);}).catch(function(){ var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();btn.textContent="Copiado"; }); }
+var TPL=[
+{n:"Acuse de recibo a la inspectrice (dossier #39454)",t:"Objet : Dossier 39454 - Accusé de réception\n\nBonjour Mme Hurtubise,\n\nNous accusons réception de votre demande de documents du 16 juillet. Nos opérations ont débuté le 1er juillet 2026 et notre premier contrat est en vigueur depuis le 1er août; nous vous transmettrons l'ensemble des documents demandés (factures émises, registre de paie et coordonnées des salariés) au plus tard le [date].\n\nMerci de votre collaboration,\n[Nom]\nDSS Multiservices (9535-8214 Québec inc.)"},
+{n:"Pedido de horas al donneur d'ouvrage (días 1-3)",t:"Objet : Relevé des heures - période du [x] au [x]\n\nBonjour,\n\nPourriez-vous nous transmettre le relevé des heures détaillées par salarié et par site pour la période du [x] au [x] (semaines finissantes le samedi)?\n\nMerci beaucoup,\n[Nom] - DSS Multiservices"},
+{n:"Pedido de attestation de conformité",t:"Objet : Demande d'attestation de conformité\n\nBonjour,\n\nPourriez-vous nous transmettre une attestation de conformité pour l'entreprise 9535-8214 Québec inc. (DSS Multiservices)?\n\nMerci,\n[Nom]"},
+{n:"Envío del paquete de conciliation al donneur d'ouvrage",t:"Objet : Conciliation [mois] - DSS Multiservices\n\nBonjour,\n\nVous trouverez ci-joint :\n1. [AAAAMMDD-AAAAMMDD DSS].xlsx - le relevé d'heures\n2. DSS COMITE [période].pdf - le rapport transmis au comité (accusé de réception inclus)\n3. DSS BANQUE [période].pdf - le relevé de la banque d'heures\n\nDétail par salarié : [X h travaillées / Y h prélevées / total / solde].\n\nMerci,\n[Nom]"}];
+function renderRef(){
+  var h='<h2 class="sec">El ciclo mensual</h2><div class="card tools"><table>'
+  +'<tr><th>Día</th><th>Acción</th></tr>'
+  +'<tr><td>1-3</td><td>'+fmt("Pedir «heures détaillées» al donneur d\'ouvrage (semanas cerrando sábado, calendario 4-4-5)")+'</td></tr>'
+  +'<tr><td>3-8</td><td>Depurar el relevé: empleados faltantes/doblados, nombres EXACTOS como factura el cliente</td></tr>'
+  +'<tr><td>5-10</td><td>'+fmt("Armar el rapport: horas por empleado, masse salariale, «REER», «prélèvement»; conciliar la «banque d\'heures» (tope ~160 h/mes, excedente con doc firmado)")+'</td></tr>'
+  +'<tr><td>~12</td><td>Llega el ÚNICO recordatorio externo (Smartsheet GDI). Si dependés de él, ya vas tarde</td></tr>'
+  +'<tr><td><b>15</b></td><td><b>DEADLINE LEGAL:</b> '+fmt("transmitir el «rapport mensuel» por el Portail (2FA). Se presenta aunque no haya habido trabajo")+'</td></tr>'
+  +'<tr><td>15 (+24h)</td><td>'+fmt("Reenviar el «accusé de réception» al donneur d\'ouvrage + Smartsheet con números reales")+'</td></tr>'
+  +'<tr><td>15-20</td><td>'+fmt("Pagar las DOS remises separadas: prélèvement (1% de masse salariale + REER employeur; mitad y mitad) y REER ($0,20/h). Recomendado: paiement préautorisé")+'</td></tr>'
+  +'<tr><td>20-30</td><td>Responder la conciliation (écarts en amarillo); si aplica, rapport corrigé + recto/verso del cheque encaissé</td></tr>'
+  +'</table><p class="note">Esfuerzo real medido en QCM: 6-10 h/mes manual; 2-3 h/mes con automatización (doc 02).</p></div>';
+
+  h+='<h2 class="sec">Fechas que no perdonan</h2><div class="card tools"><table>'
+  +'<tr><td><b>15 de cada mes</b></td><td>Rapport mensuel + remises</td></tr>'
+  +'<tr><td><b>Enero</b></td><td>'+fmt("Renovar la «lettre d\'admission» (los donneurs d\'ouvrage la piden con CNESST y Revenu Québec)")+'</td></tr>'
+  +'<tr><td><b>30-abr</b></td><td>'+fmt("Cierre de la année de référence de «vacances» y cálculo por salarié (el pago: antes de la salida en vacaciones de cada uno, art. 8.05)")+'</td></tr>'
+  +'<tr><td><b>31-oct</b></td><td>'+fmt("Cierre del cálculo de la «banque de maladie» (art. 12.02)")+'</td></tr>'
+  +'<tr><td><b>1-nov</b></td><td>Suben los taux (2026: A/B $23,83 · C $24,49) y la prime de nuit pasa a $0,50</td></tr>'
+  +'<tr><td><b>30-nov / 10-déc</b></td><td>'+fmt("Aviso del excédent de «maladie» a cada empleado CON copia al CPEEP (30-nov) → pago (10-déc)")+'</td></tr>'
+  +'<tr><td>Al recibir «infolettre»</td><td>Los cambios de taux rigen EL MISMO DÍA del aviso</td></tr>'
+  +'</table></div>';
+
+  h+='<h2 class="sec">Parámetros del décret (D-2 r. 15, vigente 2026-03-04 a 2030-11-01)</h2><div class="card"><ul>'
+  +'<li>'+fmt("Taux: Classes A/B $23,25 · C $23,90 (travaux en hauteur). «Chef d\'équipe»: +2% mínimo (4+ salariés)")+'</li>'
+  +'<li>'+fmt("«Prélèvement» 1% (0,50% + 0,50%) sobre masse salariale INCLUIDA la contribución REER del empleador")+'</li>'
+  +'<li>'+fmt("«REER» $0,20/h pagada - solo «salarié permanent» (280 h); al cruzar: formulaire d\'adhésion antes del 15 siguiente + $56 retro")+'</li>'
+  +'<li>'+fmt("Vacances 6-12% (pago antes de la salida en vacaciones de cada salarié) · Fériés: 10 o 12 para permanents según ±1 año de service continu / 8 para non-permanents · «Banque de maladie» 2,44% (solo sobre horas posteriores a las primeras 280 h)")+'</li>'
+  +'<li>'+fmt("«Registre de paie»: por día con hora exacta de inicio/fin, cada indemnité consignada; conservar 3 años")+'</li>'
+  +'<li>'+fmt("Salario SIEMPRE por cheque o virement, máx. cada 2 semanas - NUNCA efectivo (art. 10.01)")+'</li>'
+  +'</ul></div>';
+
+  h+='<h2 class="sec">Fuentes oficiales (cosecha completa de cpeep.qc.ca, 2026-08-04)</h2><div class="card"><ul>'
+  +'<li>'+fmt("Portail: el comité emite solo el «nom d'utilisateur»; la contraseña se crea con «Mot de passe oublié?» en la primera conexión. 2FA a un solo correo de empresa (buzón de rol). Solo Chrome/Firefox — nunca Edge. El portal conserva solo los 15 últimos rapports: imprimir a PDF tras cada «Envoyer».")+'</li>'
+  +'<li>'+fmt("Continuidad del rapport: la «Semaine 1 (finissant le)» debe terminar exactamente 7 días después de la última semana del rapport anterior. Con paie quincenal: rapports de 4 o 6 semanas, nunca 5. Mes sin actividad: Sommaire → cheque de 0$ → Envoyer.")+'</li>'
+  +'<li>'+fmt("«Étalement des heures» (art. 3.01): documento firmado + «avis écrit» al comité ≥15 días antes; máx. 4 semanas, ninguna >50 h; el rapport declara horas REALES.")+'</li>'
+  +'<li>'+fmt("Statut de travailleur (Modern Concept, 2019 CSC 28): toda persona pagada por limpiar es presuntamente «salarié» aunque facture como autónoma — DSS no puede pagar cuadrillas «autónomas». Consulta anónima al comité ante duda.")+'</li>'
+  +'<li>'+fmt("REER: régimen «15383CM001TP», IA Groupe Financier (1 800 567-5670 / pension@ia.ca), autoadhesión en ia.ca/monadhesion; buzones adhesionsreer@ y remboursementREER@cpeep.qc.ca. Salarié 71+: $0,20/h al taux y REER anulado con horas negativas en «Ajustements».")+'</li>'
+  +'<li>'+fmt("Fiscal: la masse salariale del décret está EXENTA de la cotisation CNESST «normes du travail» (ya paga el prélèvement 1%) — configurarlo en Desjardins. La santé-sécurité sí aplica.")+'</li>'
+  +'<li>'+fmt("Recurso: toda decisión de un inspecteur admite «demande de révision» por escrito en 30 días (formulario oficial, a info@cpeep.qc.ca, att. directrice générale).")+'</li>'
+  +'</ul><p class="note">Detalle completo con URLs: 06-Guia-Oficial-CPEEP.md · 52 documentos oficiales en fuentes-oficiales/ (decreto vigente, Loi, jurisprudencia, guías, formularios) + 4 PDF clave en fuentes-oficiales/pdf/.</p></div>'
+  +'<h2 class="sec">Contactos CPEEP verificados</h2><div class="card tools"><table>'
+  +'<tr><th>Quién</th><th>Email</th><th>Para qué</th></tr>'
+  +'<tr><td><b>Marie-Joëlle Hurtubise</b></td><td>inspecteur@cpeep.qc.ca</td><td>Inspectrice del dossier DSS #39454 - el contacto activo</td></tr>'
+  +'<tr><td>Steve Girard</td><td>sgirard@cpeep.qc.ca</td><td>Réclamations; autorizó verbalmente a DSS a operar</td></tr>'
+  +'<tr><td>Nancy Tavares</td><td>ntavares@cpeep.qc.ca</td><td>États de compte, rapports amendés, paiement préautorisé</td></tr>'
+  +'<tr><td>Martine Côté</td><td>mcote@cpeep.qc.ca</td><td>Attestations (~24 h), cartas de admisión</td></tr>'
+  +'<tr><td>Noelia Borreda / Valérie Bouchard</td><td>nborreda@ / vbouchard@cpeep.qc.ca</td><td>Portail, registro de empleados, NAS</td></tr>'
+  +'<tr><td>General</td><td>info@cpeep.qc.ca · 514 384-6640</td><td>Adhesión, attestations, spécimen de chèque</td></tr>'
+  +'</table><p class="note">Escribir SIEMPRE desde la libreta de contactos verificada: un typo (cpeep.ac.ca) le costó a QCM 3 días de rebote con deadline corriendo. 2FA del Portail a buzón de rol, nunca personal.</p></div>';
+
+  h+='<h2 class="sec">Plantillas en francés (listas para usar)</h2>';
+  TPL.forEach(function(p,i){ h+='<div class="card"><b>'+p.n+'</b><div class="frblock" style="white-space:pre-wrap;font-size:13px">'+p.t+'</div><button class="copybtn" onclick="copyT(this,TPL['+i+'].t)">Copiar</button></div>'; });
+
+  h+='<h2 class="sec">Escalamiento a David - la lista cerrada</h2><div class="card">'
+  +P("David interviene SOLO en: réclamations nuevas · inspecciones · decisiones legales («renonciation», acuerdos) · negociación con el donneur d\'ouvrage · autorización de pagos · rapports amendés. En régimen estable: ~1,5-2 h/mes (one-pager de 30 min + aprobación de pago de 15 min).\n\nTodo lo demás lo resuelve el rol sin preguntar. Escalar de más también es un error.")+'</div>';
+  document.getElementById("view").innerHTML=h;
+}
+
+/* ============ ruta ============ */
+var NLM=[
+{n:"Explicame el ciclo (Q&A)",t:"Explícame el ciclo mensual del rapport al CPEEP como si empezara mañana: qué hago cada día del 1 al 20, con las fechas exactas. Mantén los términos en francés tal cual («rapport mensuel», «prélèvement», «banque d'heures») y cita las fuentes."},
+{n:"Guía de estudio (20 preguntas)",t:"Genera una guía de estudio con las 20 preguntas más probables que me haría un inspector del CPEEP sobre nuestras obligaciones, con las respuestas correctas citadas de las fuentes. Conserva los términos en francés."},
+{n:"Errores de QCM (caso de estudio)",t:"Resume la historia 2019-2026 de QC Maintenance con el comité como caso de estudio: qué error cometieron cada vez, cuánto costó en dólares, y qué haría diferente un coordinador en DSS. Tabla cronológica al final."},
+{n:"Audio Overview (para el trayecto)",t:"Genera el Audio Overview enfocado en: el ciclo mensual del rapport y los 5 errores fatales de la historia de QC Maintenance. Audiencia: una persona que empieza mañana sin experiencia. Conserva los términos franceses tal cual («prélèvement», «rapport mensuel», «conciliation»)."}];
+function renderRuta(){
+  var h='<h2 class="sec">Hitos honestos (del plan de formación)</h2><div class="card tools"><table>'
+  +'<tr><th>Hito</th><th>Cuándo</th><th>Inversión</th></tr>'
+  +'<tr><td>Entiende el mapa</td><td>1 semana</td><td>~12 h</td></tr>'
+  +'<tr><td>Ciclo mensual con supervisión</td><td>1 mes (1er ciclo real)</td><td>~25-30 h</td></tr>'
+  +'<tr><td><b>80% de capacidad</b></td><td><b>2-3 meses (2 ciclos)</b></td><td><b>~45-60 h</b></td></tr>'
+  +'<tr><td>~95% (correspondencia no rutinaria)</td><td>5-6 meses</td><td>~80 h</td></tr>'
+  +'<tr><td>Calendario anual completo vivido</td><td>12 meses</td><td>no comprimible</td></tr>'
+  +'</table><p class="note">El cuello de botella no es la dificultad: es que el ciclo es mensual (12 repeticiones reales por año) y los errores se ven semanas después.</p></div>';
+
+  h+='<h2 class="sec">Tu semana 1 (empezando mañana)</h2><div class="card"><ul>'
+  +'<li><b>Día 1</b>: 15 min de Fichas + jugar el Simulador entero una vez (30-40 min). Anotá cada cosa que te sorprenda.</li>'
+  +'<li><b>Día 2</b>: releer el 01-Manual (secciones 2, 3 y 5) con el Simulador fresco. 15 min de Fichas.</li>'
+  +'<li><b>Día 3</b>: subir la fuente maestra a NotebookLM (abajo) y correr los 4 prompts. Audio Overview para el trayecto.</li>'
+  +'<li><b>Día 4</b>: rejugar el Simulador tomando a propósito los caminos malos que no probaste. 15 min de Fichas.</li>'
+  +'<li><b>Día 5</b>: check de salida del plan de formación: explicar en 5 minutos, sin notas, qué pasa si el rapport del 15 no se entrega. Si sale, estás listo para asistir el ciclo real de septiembre.</li>'
+  +'</ul><p class="note">Fichas todos los días, 10 min. La repetición espaciada es la que fija el francés del puesto.</p></div>';
+
+  h+='<h2 class="sec">NotebookLM - el tutor con las fuentes completas</h2><div class="card">'
+  +P("1. Abrí notebooklm.google.com y creá un notebook \"CPEEP - DSS\".\n\n2. Subí como fuente única el archivo <b>Fuente-Maestra-NotebookLM-CPEEP.md</b> (está junto a este index.html). Contiene los 8 documentos del paquete con separadores.\n\n3. Corré estos prompts (botón copiar) y generá el Audio Overview:")
+  +NLM.map(function(p,i){return '<div class="box"><b>'+p.n+'</b><p class="note" style="white-space:pre-wrap">'+p.t+'</p><button class="copybtn" onclick="copyT(this,NLM['+i+'].t)">Copiar</button></div>'}).join("")
+  +'<p class="note">División del trabajo: esta app entrena reflejos y vocabulario; NotebookLM responde preguntas abiertas con citas; el paquete de documentos es la referencia de autoridad.</p></div>';
+
+  h+='<h2 class="sec">Checklist mensual (imprimir y tachar)</h2><div class="card"><ul>'
+  +'<li>[ ] D1-3: heures détaillées pedidas al donneur d\'ouvrage</li>'
+  +'<li>[ ] D3-8: relevé depurado (nombres exactos, nadie falta, nadie sobra)</li>'
+  +'<li>[ ] D5-10: rapport armado; banque d\'heures conciliada (docs firmados)</li>'
+  +'<li>[ ] D10-12: one-pager a David; aprobación registrada</li>'
+  +'<li>[ ] D13-14: rapport TRANSMITIDO (preuve d\'envoi archivada)</li>'
+  +'<li>[ ] D15: dos remises pagadas (prélèvement + REER)</li>'
+  +'<li>[ ] D15-16: accusé reenviado al donneur d\'ouvrage + Smartsheet con números reales</li>'
+  +'<li>[ ] D20-30: conciliation respondida; evidencias del mes en su carpeta estándar</li>'
+  +'<li>[ ] Continuo: correspondencia CPEEP respondida en menos de 5 días hábiles; TitanFile descargado al recibir</li>'
+  +'</ul></div>';
+  document.getElementById("view").innerHTML=h;
+}
+
+/* ============ nav + countdown ============ */
+var TABS=[["sim","Simulador"],["fichas","Fichas"],["ref","Referencia"],["ruta","Ruta"]];
+function renderNav(){
+  document.getElementById("nav").innerHTML=TABS.map(function(t){
+    return '<button class="'+(S.tab===t[0]?"on":"")+'" onclick="go(\''+t[0]+'\')">'+t[1]+'</button>';}).join("");
+}
+function go(t){ S.tab=t; if(t==="fichas"){fq=null;} save(); render(); window.scrollTo(0,0); }
+function render(){ renderNav();
+  if(S.tab==="sim")renderSim(); else if(S.tab==="fichas")renderFichas();
+  else if(S.tab==="ref")renderRef(); else renderRuta(); }
+function countdown(){
+  var now=new Date(); var d15=new Date(now.getFullYear(),now.getMonth(),15);
+  if(now.getDate()>15) d15=new Date(now.getFullYear(),now.getMonth()+1,15);
+  var days=Math.ceil((d15-now)/86400000);
+  document.getElementById("countdown").textContent="Rapport mensuel: "+(days<=0?"HOY":"faltan "+days+" día"+(days===1?"":"s"))+" (el 15)";
+}
+countdown(); render();
+</script>
+</body>
+</html>
