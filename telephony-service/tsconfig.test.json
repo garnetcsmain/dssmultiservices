@@ -1,0 +1,13 @@
+{
+  // Node's type stripping does not rewrite the ".js" specifiers that NodeNext
+  // requires in source, so the tests are compiled the same way the service is
+  // and run against the output. Separate outDir so a test build never ends up
+  // in the image.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist-test",
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

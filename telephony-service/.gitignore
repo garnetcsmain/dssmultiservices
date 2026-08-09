@@ -1,0 +1,21 @@
+node_modules/
+dist/
+dist-test/
+.env
+*.log
+
+# Local recording working copies and the dead-letter queue.
+# These hold customer call audio - never commit them.
+recordings/
+deadletter/
+
+# Outbound WhatsApp attachments. Everything here is served publicly over a
+# signed url, so treat it as published the moment a file lands in it.
+media/
+
+# Scratch dirs created by `npm test`.
+.test-media/
+.test-recordings/
+
+# Private key de la aplicacion Vonage - nunca commitear
+vonage-private.key
