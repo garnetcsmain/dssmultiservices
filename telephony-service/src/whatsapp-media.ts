@@ -82,9 +82,11 @@ export async function archiveInboundMedia(
     const archived: ArchivedMedia = { key, bytes: body.byteLength, contentType };
 
     if (message.kind === 'audio' && config.vonage.transcribeVoiceNotes) {
-      // 'auto': a call is answered in a known language, but a voice note is
-      // whatever the customer happens to speak, and DSS serves all three.
-      const transcript = await transcribeAudio(body, 'auto');
+      // A fixed language, not 'auto' - see config.transcription.voiceNoteLanguage
+      // for the measurements. Whisper's detector was confidently wrong on
+      // French, and a wrong detection produces phonetic nonsense rather than a
+      // degraded transcript.
+      const transcript = await transcribeAudio(body, config.transcription.voiceNoteLanguage);
       if (transcript) archived.transcript = transcript;
     }
 

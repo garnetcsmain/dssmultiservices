@@ -168,7 +168,32 @@ export const config = {
     whisperPath: process.env.WHISPER_CLI_PATH ?? 'whisper-cli',
     modelPath: process.env.WHISPER_MODEL_PATH ?? '',
     ffmpegPath: process.env.FFMPEG_PATH ?? 'ffmpeg',
-    language: process.env.WHISPER_LANGUAGE ?? 'en',
+    language: process.env.WHISPER_LANGUAGE ?? 'fr',
+
+    /**
+     * Language for inbound WhatsApp voice notes.
+     *
+     * There is no good value here, only a least-bad one. Measured in the
+     * container on maple, 2026-08-09, against synthesised speech:
+     *
+     *   -l auto  on French  -> detected "en" at p=0.93 (base), 0.89 (small),
+     *                          0.56 (large-v3-turbo). All three wrong, and the
+     *                          output is phonetic nonsense, not a degraded
+     *                          transcript: "Il-Wai on Fou-Aitou A Yusau sold".
+     *   -l fr    on English -> clean, correct English. Costs nothing.
+     *   -l fr    on Spanish -> nonsense: "Ola, Wenoz Dias, Heyunifuga Diagwin".
+     *
+     * So auto fails on French and a fixed 'fr' fails on Spanish. French wins
+     * by customer count, not by being safe. A Spanish voice note will produce
+     * garbage until someone sets this differently or the language is known.
+     *
+     * Caveat worth keeping: those measurements are macOS `say` output, not
+     * human speech, and TTS prosody is exactly the kind of thing that throws
+     * language detection. Whisper is generally strong on French. Re-run this
+     * against a real voice note before trusting any of it - and note the
+     * archive key travels with the transcript, so a human can always listen.
+     */
+    voiceNoteLanguage: process.env.WHISPER_VOICE_NOTE_LANGUAGE ?? 'fr',
     timeoutMs: Number(process.env.WHISPER_TIMEOUT_MS ?? 300_000),
   },
 

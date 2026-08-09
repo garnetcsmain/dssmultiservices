@@ -271,10 +271,20 @@ quote. Losing the quote is survivable; dropping the customer's answer is not.
 
 Inbound media is fetched immediately rather than queued, because Vonage expires
 it. Voice notes then go through the same local whisper that handles call
-recordings, with language detection set to `auto` — a call is answered in a
-known language, but a voice note is whatever the customer happens to speak.
-Without that step the agent, which reads text only, would silently ignore
-anyone who prefers talking to typing.
+recordings — without that step the agent, which reads text only, would silently
+ignore anyone who prefers talking to typing.
+
+That path was exercised inside the container, not assumed: WhatsApp sends
+OGG/Opus rather than WAV, and ffmpeg decodes it in 0.13s with whisper adding
+1.7s on the base model for a 9-second clip.
+
+**Language is the unsolved part.** `auto` detected a French clip as English at
+p=0.93, and the failure is not a degraded transcript but phonetic nonsense. A
+fixed `fr` handles English fine and mangles Spanish. There is no setting that
+serves all three, so `WHISPER_VOICE_NOTE_LANGUAGE` defaults to French on
+customer count and the archive key travels with every transcript so a human can
+listen when the text looks wrong. Measurements were on synthesised speech and
+deserve re-running against a real voice note.
 
 Reactions are recorded but do not trigger an agent run. A thumbs-up is an
 acknowledgement, and answering one would cost a completion and earn the

@@ -296,6 +296,43 @@ whisper is slower than Twilio's webhook patience.
 is enrichment; call archival is the part that cannot be redone later, and must
 not fail because a model path is wrong.
 
+### Verified in the container (maple, 2026-08-09)
+
+The WhatsApp path decodes OGG/Opus, not WAV, so it was exercised end to end
+inside the running container rather than assumed:
+
+| | |
+|---|---|
+| `ffmpeg` OGG/Opus → 16 kHz mono | 0.13s, libopus present |
+| `whisper-cli`, base-q5_0, 8.6s clip | **1.7s** |
+| same clip, small-q5_1 | 5.5s |
+| same clip, large-v3-turbo-q5_0 | 22–43s — 5× realtime, too slow to be worth it |
+
+### Language is an unsolved edge, not a solved one
+
+`WHISPER_VOICE_NOTE_LANGUAGE` defaults to `fr`. It is **not** `auto`, and the
+reason is measured:
+
+- `-l auto` on French was detected as **English** — p=0.93 on base, 0.89 on
+  small, 0.56 on large-v3-turbo. All three wrong. The result is not a worse
+  transcript, it is phonetic nonsense.
+- `-l fr` on English audio returns clean English. That hint costs nothing.
+- `-l fr` on Spanish audio returns nonsense.
+
+So `auto` breaks French and a fixed `fr` breaks Spanish. French wins on
+customer count, not on safety. **A Spanish voice note will transcribe as
+garbage** until this is set differently.
+
+Caveat that matters: those samples are macOS `say` output, not human speech,
+and TTS prosody is exactly what throws language detection. Whisper is generally
+strong on French. Re-measure with a real voice note before trusting any of it.
+The archive key travels with every transcript precisely so a human can listen
+when the text looks wrong.
+
+Note also that `WHISPER_LANGUAGE` (used for **calls**, not voice notes) is
+currently `en` in maple's `.env`, so a French voicemail is being transcribed as
+English today. The code default is now `fr`; the deployed env still overrides it.
+
 **The model currently points into `~/Projects/KazeApp`.** Copy
 `ggml-base-q5_0.bin` somewhere this service owns before relying on it — a sibling
 project moving its files should not break telephony.
