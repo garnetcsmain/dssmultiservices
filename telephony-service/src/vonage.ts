@@ -8,19 +8,56 @@ import { config } from './config.js';
  * Sending authenticates with an application JWT (RS256). Basic auth is only
  * good enough for the sandbox: once the number is linked to an application,
  * production answers Basic with a flat 401 and no hint as to why.
+ *
+ * Payload shapes below are taken from Vonage's published WhatsApp snippets,
+ * not inferred. Where a field is documented for one message type but only
+ * implied for others - `context` is the case that matters - the code says so
+ * and degrades instead of assuming.
  */
 
-export interface OutboundWhatsApp {
-  to: string;
-  text: string;
+/** Message kinds we can send. Each maps to one documented Vonage message_type. */
+export type OutboundWhatsApp =
+  | { kind: 'text'; to: string; text: string; replyTo?: string }
+  | { kind: 'image'; to: string; url: string; caption?: string; replyTo?: string }
+  | { kind: 'video'; to: string; url: string; caption?: string; replyTo?: string }
+  | { kind: 'audio'; to: string; url: string; replyTo?: string }
+  | { kind: 'file'; to: string; url: string; caption?: string; name?: string; replyTo?: string }
+  | { kind: 'sticker'; to: string; url: string }
+  | { kind: 'reaction'; to: string; emoji: string; messageUuid: string }
+  | { kind: 'unreaction'; to: string; messageUuid: string };
+
+export type InboundKind =
+  | 'text'
+  | 'image'
+  | 'audio'
+  | 'video'
+  | 'file'
+  | 'sticker'
+  | 'location'
+  | 'reaction'
+  | 'unsupported';
+
+export interface InboundMedia {
+  url: string;
+  caption?: string;
+  name?: string;
 }
 
 export interface InboundWhatsApp {
   messageUuid: string;
   from: string;
   to: string;
-  text: string;
   timestamp: string;
+  kind: InboundKind;
+  /** Text body, or the caption of a media message. Empty when neither exists. */
+  text: string;
+  media?: InboundMedia;
+  /** Present when the customer replied to a specific earlier message. */
+  contextUuid?: string;
+  reaction?: { action: string; emoji?: string };
+  location?: { lat: number; long: number; name?: string; address?: string };
+  /** Original message_type, kept for logging when we could not classify it. */
+  rawType: string;
 }
 
 let cachedKey: Buffer | null = null;
@@ -78,30 +115,187 @@ async function authHeader(): Promise<string> {
   return `Basic ${Buffer.from(raw).toString('base64')}`;
 }
 
-export async function sendWhatsApp(message: OutboundWhatsApp): Promise<string> {
-  const response = await fetch(`${config.vonage.messagesBaseUrl}/v1/messages`, {
+/** Builds the channel-specific half of a send payload. */
+function messageBody(message: OutboundWhatsApp): Record<string, unknown> {
+  switch (message.kind) {
+    case 'text':
+      return { message_type: 'text', text: message.text };
+
+    case 'image':
+      return {
+        message_type: 'image',
+        image: { url: message.url, ...(message.caption ? { caption: message.caption } : {}) },
+      };
+
+    case 'video':
+      return {
+        message_type: 'video',
+        video: { url: message.url, ...(message.caption ? { caption: message.caption } : {}) },
+      };
+
+    // No caption field: WhatsApp renders audio as a player, with nowhere to
+    // put one. Send a separate text message if something needs saying.
+    case 'audio':
+      return { message_type: 'audio', audio: { url: message.url } };
+
+    case 'file':
+      return {
+        message_type: 'file',
+        file: {
+          url: message.url,
+          ...(message.caption ? { caption: message.caption } : {}),
+          ...(message.name ? { name: message.name } : {}),
+        },
+      };
+
+    // Stickers must be .webp. WhatsApp rejects anything else outright rather
+    // than converting, so the check is worth making before we spend a request.
+    case 'sticker':
+      return { message_type: 'sticker', sticker: { url: message.url } };
+
+    case 'reaction':
+      return {
+        message_type: 'reaction',
+        reaction: { action: 'react', emoji: message.emoji },
+        context: { message_uuid: message.messageUuid },
+      };
+
+    case 'unreaction':
+      return {
+        message_type: 'reaction',
+        reaction: { action: 'unreact' },
+        context: { message_uuid: message.messageUuid },
+      };
+  }
+}
+
+async function postMessage(payload: Record<string, unknown>): Promise<Response> {
+  return fetch(`${config.vonage.messagesBaseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
       Authorization: await authHeader(),
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({
-      message_type: 'text',
-      channel: 'whatsapp',
-      from: config.vonage.whatsappNumber,
-      to: normalizeMsisdn(message.to),
-      text: message.text,
-    }),
+    body: JSON.stringify(payload),
   });
+}
 
-  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+export async function sendWhatsApp(message: OutboundWhatsApp): Promise<string> {
+  if (message.kind === 'sticker' && !/\.webp(\?|$)/i.test(message.url)) {
+    throw new Error(`WhatsApp stickers must be .webp, got: ${message.url}`);
+  }
+
+  const base = {
+    channel: 'whatsapp',
+    from: config.vonage.whatsappNumber,
+    to: normalizeMsisdn(message.to),
+    ...messageBody(message),
+  };
+
+  // Quoting an earlier message. Vonage documents `context` explicitly for
+  // reactions; for ordinary messages it is consistent with the API but not
+  // spelled out, so a rejection is treated as "this account cannot quote"
+  // rather than as a failed send. Losing the quote is survivable; dropping
+  // the customer's answer is not.
+  const replyTo = 'replyTo' in message ? message.replyTo : undefined;
+  const payload = replyTo ? { ...base, context: { message_uuid: replyTo } } : base;
+
+  let response = await postMessage(payload);
+
+  if (!response.ok && replyTo && response.status >= 400 && response.status < 500) {
+    console.warn('[vonage] quoted reply rejected, resending without context', {
+      status: response.status,
+      replyTo,
+    });
+    response = await postMessage(base);
+  }
+
+  const result = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   if (!response.ok) {
     throw new Error(
-      `Vonage send failed (${response.status}): ${payload.title ?? ''} ${payload.detail ?? ''}`.trim(),
+      `Vonage send failed (${response.status}): ${result.title ?? ''} ${result.detail ?? ''}`.trim(),
     );
   }
-  return String(payload.message_uuid ?? '');
+  return String(result.message_uuid ?? '');
+}
+
+/**
+ * Marks an inbound message read, and optionally shows the typing bubble.
+ *
+ * PATCH /v1/messages/{uuid}, per the Messages API reference. Best-effort by
+ * design: this is feedback, and a customer would rather have a late answer
+ * than no answer because a read receipt failed.
+ */
+export async function acknowledgeMessage(
+  messageUuid: string,
+  options: { typing?: boolean } = {},
+): Promise<void> {
+  if (!messageUuid) return;
+  if (!config.vonage.markRead && !options.typing) return;
+
+  const body: Record<string, unknown> = { status: 'read' };
+  if (options.typing && config.vonage.typingIndicator) {
+    body.replying_indicator = { show: true, type: 'text' };
+  }
+
+  try {
+    const response = await fetch(
+      `${config.vonage.messagesBaseUrl}/v1/messages/${encodeURIComponent(messageUuid)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: await authHeader(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+    if (!response.ok) {
+      console.warn('[vonage] acknowledge failed', {
+        messageUuid,
+        status: response.status,
+        detail: (await response.text()).slice(0, 160),
+      });
+    }
+  } catch (err) {
+    console.warn('[vonage] acknowledge error', {
+      messageUuid,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
+ * Fetches inbound media.
+ *
+ * These URLs are on Vonage's API host and need the same application JWT as a
+ * send - an unauthenticated GET returns 401. They also expire, which is the
+ * real reason this runs promptly rather than on a queue.
+ */
+export async function downloadVonageMedia(
+  url: string,
+): Promise<{ body: Buffer; contentType: string }> {
+  const response = await fetch(url, { headers: { Authorization: await authHeader() } });
+  if (!response.ok) {
+    throw new Error(`Vonage media fetch failed: ${response.status} ${response.statusText}`);
+  }
+
+  const declared = Number(response.headers.get('content-length') ?? 0);
+  if (declared > config.vonage.maxInboundBytes) {
+    throw new Error(`Inbound media too large: ${declared} bytes`);
+  }
+
+  const body = Buffer.from(await response.arrayBuffer());
+  if (body.byteLength === 0) throw new Error('Vonage returned an empty media body');
+  if (body.byteLength > config.vonage.maxInboundBytes) {
+    throw new Error(`Inbound media too large: ${body.byteLength} bytes`);
+  }
+
+  return {
+    body,
+    contentType: response.headers.get('content-type')?.split(';')[0]?.trim() ?? 'application/octet-stream',
+  };
 }
 
 /**
@@ -156,14 +350,82 @@ export function toE164(msisdn: string): string {
   return digits ? `+${digits}` : '';
 }
 
+/** Message types that carry a fetchable media url, and the field it sits in. */
+const MEDIA_KINDS: Record<string, InboundKind> = {
+  image: 'image',
+  audio: 'audio',
+  video: 'video',
+  file: 'file',
+  sticker: 'sticker',
+};
+
 export function parseInbound(body: Record<string, any>): InboundWhatsApp | null {
   if (body.channel !== 'whatsapp') return null;
-  if (body.message_type !== 'text') return null;
-  return {
+
+  const rawType = String(body.message_type ?? '');
+  const common = {
     messageUuid: String(body.message_uuid ?? ''),
     from: toE164(String(body.from ?? '')),
     to: toE164(String(body.to ?? '')),
-    text: String(body.text ?? ''),
     timestamp: String(body.timestamp ?? new Date().toISOString()),
+    // Present when the customer used WhatsApp's reply-to on one of our
+    // messages. Carrying it through is what lets the agent answer in-thread.
+    contextUuid: body.context?.message_uuid
+      ? String(body.context.message_uuid)
+      : undefined,
+    rawType,
   };
+
+  if (rawType === 'text') {
+    return { ...common, kind: 'text', text: String(body.text ?? '') };
+  }
+
+  const mediaKind = MEDIA_KINDS[rawType];
+  if (mediaKind) {
+    const payload = body[rawType] ?? {};
+    const url = String(payload.url ?? '');
+    if (!url) return { ...common, kind: 'unsupported', text: '' };
+    return {
+      ...common,
+      kind: mediaKind,
+      text: String(payload.caption ?? ''),
+      media: {
+        url,
+        caption: payload.caption ? String(payload.caption) : undefined,
+        name: payload.name ? String(payload.name) : undefined,
+      },
+    };
+  }
+
+  if (rawType === 'location') {
+    const loc = body.location ?? {};
+    return {
+      ...common,
+      kind: 'location',
+      text: '',
+      location: {
+        lat: Number(loc.lat ?? 0),
+        long: Number(loc.long ?? 0),
+        name: loc.name ? String(loc.name) : undefined,
+        address: loc.address ? String(loc.address) : undefined,
+      },
+    };
+  }
+
+  // The customer reacted to one of our messages. Worth surfacing - a thumbs-up
+  // on a quote is an answer - but it is not a message to reply to.
+  if (rawType === 'reaction') {
+    const reaction = body.reaction ?? {};
+    return {
+      ...common,
+      kind: 'reaction',
+      text: '',
+      reaction: {
+        action: String(reaction.action ?? 'react'),
+        emoji: reaction.emoji ? String(reaction.emoji) : undefined,
+      },
+    };
+  }
+
+  return { ...common, kind: 'unsupported', text: '' };
 }

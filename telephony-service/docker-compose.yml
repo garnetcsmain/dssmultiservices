@@ -8,6 +8,9 @@ services:
     environment:
       # Container paths, overriding whatever the .env carried over from a laptop.
       LOCAL_STORAGE_ROOT: /app/recordings
+      # Separate from the archive on purpose: everything under MEDIA_ROOT is
+      # reachable over a signed public url, and customer recordings must not be.
+      MEDIA_ROOT: /app/media
       WHISPER_CLI_PATH: /usr/local/bin/whisper-cli
       WHISPER_MODEL_PATH: /models/ggml-base-q5_0.bin
       FFMPEG_PATH: /usr/bin/ffmpeg
@@ -25,6 +28,10 @@ services:
     volumes:
       - ./recordings:/app/recordings
       - ./deadletter:/app/deadletter
+      # Read-only inside the container: the service serves these files, it has
+      # no reason to write them, and a compromised handler should not be able
+      # to publish new ones.
+      - ./media:/app/media:ro
       - ./models:/models:ro
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

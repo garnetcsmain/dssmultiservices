@@ -17,8 +17,11 @@ mindmap
         Number +1 450 235 8434
         Dual-channel recording
         SMS for voicemail alerts
+      IVR optional
+        Three languages
+        One voice Aoede
+        Falls through to a human
       Ring 20s then voicemail
-      Bilingual recording notice
       Archive pipeline
         Download
         Store
@@ -30,21 +33,34 @@ mindmap
         Application 8e711bd8
       Same number as voice
         BYON via Embedded Signup
+      Send
+        Text and quoted reply
+        Image video file
+        Voice note
+        Sticker
+        Reaction and unreaction
+      Receive
+        Media archived
+        Voice notes transcribed
+        Read receipts and typing
       Sender allowlist
       Duplicate suppression
     Brain
       Hermes on maple
         Chat completions API
         Session per contact
+        Directives for rich replies
       Local transcription
         whisper.cpp
-        Replaces Twilio STT
+        Calls and voice notes
     Hosting
       maple
         Docker
         Tailscale Funnel port 10000
         Loopback-only binding
+        Signed media endpoint
     Deliberate gaps
+      No WhatsApp calling at Vonage
       No groups on Business API
       Second number needed for Baileys
       Display name pending Meta review
@@ -122,6 +138,38 @@ sequenceDiagram
         S->>T: SMS transcript to David
     end
 ```
+
+### The menu
+
+`IVR_ENABLED` puts a three-language menu in front of the bridge: 1 reaches a
+person, 2 leaves a message, 9 and 8 change language. It is **off by default**,
+because the ring window above was tuned against a live carrier and a menu
+spends some of the caller's patience before that window even opens.
+
+Two rules keep it from becoming a trap. A caller who presses nothing twice is
+transferred rather than looped — a dead keypad or a rotary phone must still
+reach someone. And anything unrecognised falls through to a human, so an input
+nobody anticipated fails toward service rather than toward a hang-up.
+
+The recording notice moves inside the menu when it is on, so it is still heard
+before any bridge opens.
+
+### The voice
+
+All three languages speak as `Chirp3-HD-Aoede`, Google's generative tier, which
+is the only family carrying one voice name across fr-CA, en-US and es-US. That
+is what lets the line sound like one person rather than three narrators.
+`fr-CA`, not `fr-FR`: a Parisian voice on a Montreal line reads as offshore.
+
+This replaced `Polly.Chantal` and `Polly.Joanna`, both *standard* tier — the
+oldest and most obviously synthetic voices Twilio still offers.
+
+Generative voices are not enabled on every Twilio account, and an unavailable
+voice does not fail loudly. `VOICE_TIER=neural` steps down to
+`Polly.Gabrielle-Neural` / `Joanna-Neural` / `Lupe-Neural`, and
+`VOICE_OVERRIDES=fr=Google.fr-CA-Chirp3-HD-Kore` swaps a single one — the
+catalogue changes on Twilio's schedule, so this has to be an env change rather
+than a deploy.
 
 The recording notice plays **before** `<Dial>`, not inside it. Recording both
 legs of a call in Quebec means telling the caller first; announcing it after the
@@ -205,6 +253,81 @@ Two auth schemes meet here and they are easy to confuse:
 Basic auth works against the sandbox and fails against production once the
 number is linked to an application. That 401 cost us a debugging round.
 
+### What the line can send and receive
+
+| | Send | Receive |
+|---|---|---|
+| Text | yes | yes |
+| Quoted reply | yes, with fallback | yes, `context.message_uuid` |
+| Image, video, file | yes | archived |
+| Voice note | yes | archived **and transcribed** |
+| Sticker | yes, `.webp` only | archived |
+| Reaction / unreaction | yes | logged, no agent run |
+| Location | — | passed to the agent as coordinates |
+
+`context` is documented by Vonage for reactions and only implied for ordinary
+messages, so a quoted send that comes back 4xx is retried once **without** the
+quote. Losing the quote is survivable; dropping the customer's answer is not.
+
+Inbound media is fetched immediately rather than queued, because Vonage expires
+it. Voice notes then go through the same local whisper that handles call
+recordings, with language detection set to `auto` — a call is answered in a
+known language, but a voice note is whatever the customer happens to speak.
+Without that step the agent, which reads text only, would silently ignore
+anyone who prefers talking to typing.
+
+Reactions are recorded but do not trigger an agent run. A thumbs-up is an
+acknowledgement, and answering one would cost a completion and earn the
+customer an unsolicited reply.
+
+### How the agent reaches the rich types
+
+Hermes returns text and has no tool surface pointed at Vonage — and it
+configures itself, so giving it one is not ours to do. The seam is a small
+directive vocabulary the agent can emit inside its completion:
+
+```
+::react 👍          ::image <url> | caption      ::audio <url>
+::unreact           ::video <url> | caption      ::sticker <url>
+::reply             ::file  <url> | name.pdf     ::call
+```
+
+Line-based rather than JSON on purpose. A model that emits slightly malformed
+JSON produces nothing; a model that fumbles a directive line produces a message
+with one odd line in it, which the customer can still read. Unrecognised
+directives stay in the prose for the same reason. A completion with no
+directives behaves exactly as it did before this existed.
+
+### Serving outbound media
+
+WhatsApp fetches attachments by URL, so anything we send has to be reachable
+from the public internet — which this service already is, through Funnel. That
+makes exposure, not reachability, the problem.
+
+`MEDIA_ROOT` is a **separate directory from the recordings archive**, links are
+HMAC-signed over path *and* expiry together, and they expire. The archive is
+deliberately not servable: a signed link to a customer call is one forwarded
+message away from being a disclosure. Public `https` URLs pass through
+unsigned; plaintext `http` is refused rather than downgraded.
+
+### WhatsApp calling
+
+**Not available to us.** Meta opened the WhatsApp Business Calling API to
+businesses through their BSPs, but Vonage publishes no calling endpoints, no
+webhook contract and no code snippets for it — checked across their API
+reference, the WhatsApp concept guide and their announcements.
+
+Two things follow. First, no handler was written against a payload shape nobody
+has documented; `/webhooks/vonage/calls` exists only to log and loudly flag an
+event if Vonage ever ships one, so the contract can be read off something real.
+Second, even if it arrived, **WhatsApp has no native call recording** — some
+BSPs bolt it on — which conflicts with an architecture whose whole premise is
+that every call is recorded, verified and archived.
+
+What works today is deflection: `::call` hands the customer the PSTN number,
+which is the same number this WhatsApp account runs on, where the IVR answers
+and the recording pipeline already applies.
+
 ## Deployment
 
 | | |
@@ -244,10 +367,17 @@ API, never Vonage. Keeping Vonage as BSP is exactly why the bridge in
 | Twilio voice | ~$0.014/min | ~$200 |
 | Twilio recording | $0.0025/min | ~$39 |
 | Recording storage | ~30 GB/mo of WAV | $0.60 – $12 |
+| Voice-note transcription **avoided** | local whisper | small but unbounded |
+| Generative TTS | per character, above standard tier | a few cents per call |
 | Hermes tokens | ~33k prompt/message | **unmeasured, potentially dominant** |
 
 Storage tier is a rounding error; `RETENTION_DAYS` is what actually bounds it,
 and 365 days is also the defensible answer under PIPEDA.
+
+The retention sweep used to match `.wav` only, which quietly exempted every
+WhatsApp photo, document and voice note — the sweep ran clean while the data it
+was meant to remove accumulated. It now covers both prefixes and every
+extension. Worth knowing that the bug was invisible from the logs.
 
 The agent context is the one line that can quietly eat the savings, because it
 appears on no telephony invoice. Every reply logs its `promptTokens` so the
@@ -277,6 +407,11 @@ contact's 24-hour window needs an approved template, and none exists.
 - The persona is an AI agent behind a human name and photo — a disclosure line
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
-- No automated test suite; everything here was verified by hand against live
-  services
 - Three stale recordings on Twilio, including a consumed OTP
+- The IVR is verified against the running service but has never carried a real
+  call; ring timing under Rogers still needs re-measuring with the menu on
+- Outbound media has never been sent to a real handset — every message type is
+  built to Vonage's published shape, none is confirmed against a device
+- `npm test` covers the pure logic (directive parsing, media signing and path
+  escape, IVR routing, inbound classification). Everything touching a provider
+  is still verified by hand.

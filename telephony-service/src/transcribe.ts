@@ -17,14 +17,33 @@ import { config } from './config.js';
  * down call archival, which is the part that cannot be redone later.
  */
 export async function transcribeWav(wav: Buffer): Promise<string | null> {
+  return transcribeAudio(wav);
+}
+
+/**
+ * Transcribes any audio ffmpeg can decode.
+ *
+ * Call recordings arrive as 8 kHz WAV; WhatsApp voice notes arrive as OGG
+ * Opus. Both go through the same resample, because ffmpeg probes the content
+ * rather than trusting the extension - so the container never has to be
+ * declared here.
+ *
+ * `language` overrides the configured default. Calls are answered in a known
+ * language; an inbound voice note is whatever the customer speaks, so that
+ * path passes 'auto'.
+ */
+export async function transcribeAudio(
+  audio: Buffer,
+  language = config.transcription.language,
+): Promise<string | null> {
   if (!config.transcription.enabled) return null;
 
   let workdir: string | undefined;
   try {
     workdir = await mkdtemp(path.join(tmpdir(), 'dss-stt-'));
-    const source = path.join(workdir, 'in.wav');
+    const source = path.join(workdir, 'in.media');
     const resampled = path.join(workdir, '16k.wav');
-    await writeFile(source, wav);
+    await writeFile(source, audio);
 
     // whisper.cpp only accepts 16 kHz mono. Twilio records 8 kHz, and dual
     // channel for real calls - downmixing loses which speaker said what, so
@@ -39,7 +58,7 @@ export async function transcribeWav(wav: Buffer): Promise<string | null> {
     const output = await run(config.transcription.whisperPath, [
       '-m', config.transcription.modelPath,
       '-f', resampled,
-      '-l', config.transcription.language,
+      '-l', language,
       '-nt',
     ]);
 

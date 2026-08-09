@@ -26,11 +26,15 @@ export class GcsStore implements RecordingStore {
   async put(key: string, body: Buffer, metadata: Record<string, string>): Promise<void> {
     const bucket = await this.bucketPromise;
     const sha256 = createHash('sha256').update(body).digest('hex');
+    // Not everything here is a call recording any more - WhatsApp attachments
+    // land in the same store - so the caller declares the type and audio/wav
+    // is only the fallback.
+    const contentType = metadata.contentType ?? 'audio/wav';
     await bucket.file(key).save(body, {
       resumable: false,
-      contentType: 'audio/wav',
+      contentType,
       metadata: {
-        contentType: 'audio/wav',
+        contentType,
         metadata: { ...metadata, sha256, bytes: String(body.byteLength) },
       },
     });
@@ -53,8 +57,13 @@ export class GcsStore implements RecordingStore {
 
   async listExpired(cutoff: Date): Promise<string[]> {
     const bucket = await this.bucketPromise;
-    const [files] = await bucket.getFiles({ prefix: 'recordings/' });
-    return files
+    // Both prefixes: a retention promise that covers calls but silently
+    // exempts WhatsApp attachments is not a retention promise.
+    const listings = await Promise.all(
+      ['recordings/', 'whatsapp/'].map((prefix) => bucket.getFiles({ prefix })),
+    );
+    return listings
+      .flatMap(([files]) => files)
       .filter((f) => {
         const created = f.metadata.timeCreated;
         return typeof created === 'string' && new Date(created) < cutoff;

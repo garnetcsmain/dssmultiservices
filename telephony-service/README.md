@@ -104,6 +104,20 @@ the TwiML itself, so it needs no console configuration.
 Add each provisioned number to `src/directory.ts`. A call to a number with no
 directory entry gets an apology and a hangup rather than a dead bridge.
 
+## Tests
+
+```bash
+npm test
+```
+
+Covers the logic that has no provider on the other end: directive parsing,
+media URL signing and path escape, IVR language routing, and inbound message
+classification. Compiled first rather than type-stripped, because Node's
+stripper does not rewrite the `.js` specifiers NodeNext requires.
+
+Nothing here talks to Twilio, Vonage or Hermes — those paths are still verified
+by hand against live services, which is the honest state of this repo.
+
 ## Storage
 
 `STORAGE_DRIVER=local` writes to `LOCAL_STORAGE_ROOT`; `STORAGE_DRIVER=gcs`
@@ -151,12 +165,36 @@ service with Hermes, so transcription never leaves the box.
 ## Voice: routing and voicemail
 
 ```
-inbound -> bilingual recording notice -> <Dial> employee (20s, dual-channel)
-                                          |
-                    answered -> hang up   |   unanswered -> voicemail
-                                                            |
-                              record -> transcribe locally -> archive -> SMS the employee
+inbound -> recording notice -> <Dial> employee (20s, dual-channel)
+                                |
+              answered -> hang up|  unanswered -> voicemail
+                                                    |
+                      record -> transcribe locally -> archive -> SMS the employee
 ```
+
+With `IVR_ENABLED=1` a menu comes first: **1** a person, **2** a message,
+**9** English, **8** Spanish, **0** French. Off by default — the ring window
+below was tuned against a live carrier and a menu spends some of it. A caller
+who presses nothing twice is transferred rather than looped, and any
+unrecognised key falls through to a human.
+
+### Voices
+
+One generative voice, `Chirp3-HD-Aoede`, in all three languages — the only
+family carrying the same voice name across `fr-CA`, `en-US` and `es-US`, so the
+line sounds like one person. `fr-CA` rather than `fr-FR` on purpose.
+
+| Variable | Effect |
+|---|---|
+| `VOICE_TIER=neural` | Steps down to `Polly.Gabrielle-Neural` / `Joanna-Neural` / `Lupe-Neural`. Use this if generative voices are not enabled on the account — an unavailable voice does not fail loudly. |
+| `VOICE_OVERRIDES=fr=Google.fr-CA-Chirp3-HD-Kore` | Swaps one language. Comma-separated; the locale is inferred from the voice id. |
+
+| Variable | Default | |
+|---|---|---|
+| `RING_SECONDS` | `20` | Four or five rings. Sits under Rogers' ~20–25s divert; raising it means the carrier answers first and the voicemail is lost. |
+| `IVR_ENABLED` | `0` | |
+| `IVR_GATHER_TIMEOUT` | `6` | Seconds to wait for a keypress. |
+| `IVR_MAX_ATTEMPTS` | `2` | Menu repeats before falling through to a human. |
 
 `<Dial>` carries an `action` URL. Without one, an unanswered call falls off the
 end of the TwiML document and hangs up on the customer — a business line that
@@ -278,6 +316,72 @@ captures raw bytes during parse rather than re-serializing.
 
 WhatsApp routes only mount when key, secret, and from-number are all set — a
 voice-only deployment does not expose message endpoints that cannot work.
+
+### Message types
+
+Sends text, quoted replies, images, video, files, voice notes, stickers
+(`.webp` only), reactions and unreactions. Receives all of the above: media is
+downloaded immediately — Vonage expires it — archived under `whatsapp/` with
+the same retention as call recordings, and **voice notes are transcribed
+locally** before the agent sees them, with language detection on `auto`.
+
+Reactions are logged but do not trigger an agent run; a thumbs-up is not a
+question.
+
+| Variable | Default | |
+|---|---|---|
+| `WHATSAPP_MARK_READ` | `1` | Blue ticks. Cosmetic for a human, load-bearing for a bot that thinks for 30s. |
+| `WHATSAPP_TYPING_INDICATOR` | `1` | The typing bubble, dismissed on reply or after 25s. |
+| `WHATSAPP_DOWNLOAD_MEDIA` | `1` | |
+| `WHATSAPP_TRANSCRIBE_VOICE_NOTES` | `1` | Needs `TRANSCRIPTION_ENABLED=1`. |
+| `WHATSAPP_MAX_INBOUND_BYTES` | `32MB` | |
+
+### Sending attachments
+
+WhatsApp fetches media by URL, so `MEDIA_ROOT` is served publicly over
+HMAC-signed, expiring links. **Keep it a different directory from the recordings
+archive** — a signed link to a customer call is one forward away from a
+disclosure. Public `https` URLs pass through unsigned; `http` is refused.
+
+| Variable | Default | |
+|---|---|---|
+| `MEDIA_SIGNING_SECRET` | falls back to `ADMIN_TOKEN` | **Unset means local files cannot be sent at all** — the endpoint does not mount. |
+| `MEDIA_ROOT` | `./media` | |
+| `MEDIA_URL_TTL_SECONDS` | `3600` | |
+| `MEDIA_MAX_BYTES` | `64MB` | WhatsApp's own ceiling. |
+
+Test any type without involving the agent:
+
+```bash
+curl -X POST "$PUBLIC_BASE_URL/admin/whatsapp/send" -H "X-Admin-Token: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"kind":"image","to":"+15144637712","url":"logo.png","caption":"essai"}'
+```
+
+### How Hermes sends more than text
+
+Hermes returns text and configures itself, so instead of a tool surface it emits
+directives on their own lines. Anything unrecognised stays in the prose.
+
+```
+::react 👍          ::image <url> | caption      ::audio <url>
+::unreact           ::video <url> | caption      ::sticker <url>
+::reply             ::file  <url> | name.pdf     ::call
+```
+
+`::reply` is a modifier: everything after it quotes the incoming message.
+`::call` hands over the PSTN number — see below for why that is not a WhatsApp
+call.
+
+### WhatsApp calling: not available
+
+Meta opened the WhatsApp Business Calling API through BSPs, but **Vonage
+publishes no calling endpoints, webhook contract or snippets for it.** Nothing
+was written against an undocumented shape; `/webhooks/vonage/calls` only logs
+and flags an event loudly if one ever arrives.
+
+Note also that WhatsApp has **no native call recording**, which conflicts with
+an architecture that records and archives every call. Deflection to the PSTN
+line — where the IVR answers and the recording pipeline applies — is the
+working path.
 
 ### Account state (verified 2026-08-09)
 

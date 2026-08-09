@@ -75,7 +75,11 @@ export class LocalStore implements RecordingStore {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           await walk(full);
-        } else if (entry.name.endsWith('.wav')) {
+        } else if (!entry.name.endsWith('.meta.json') && !entry.name.endsWith('.partial')) {
+          // Everything that is not bookkeeping is customer content and expires.
+          // This used to match only .wav, which quietly exempted every WhatsApp
+          // photo, document and voice note from retention - the sweep would run
+          // clean while the data it was supposed to remove accumulated forever.
           const info = await fsStat(full);
           if (info.mtime < cutoff) expired.push(path.relative(rootAbs, full));
         }

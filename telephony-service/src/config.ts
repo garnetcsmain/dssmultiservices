@@ -1,3 +1,5 @@
+import { applyOverrides, voiceTable } from './voices.js';
+
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env var: ${name}`);
@@ -14,6 +16,9 @@ const storageDriver = (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 'gcs'
 if (storageDriver !== 'local' && storageDriver !== 'gcs') {
   throw new Error(`STORAGE_DRIVER must be "local" or "gcs", got "${storageDriver}"`);
 }
+
+const voiceTier = process.env.VOICE_TIER ?? 'generative';
+const voices = applyOverrides(voiceTable(voiceTier), process.env.VOICE_OVERRIDES ?? '');
 
 export const config = {
   port: Number(process.env.PORT ?? 8080),
@@ -34,6 +39,11 @@ export const config = {
   },
 
   voice: {
+    // Who the line sounds like. See voices.ts - one generative voice carried
+    // across all three languages, overridable without a deploy.
+    tier: voiceTier,
+    voices,
+
     playRecordingNotice: flag('PLAY_RECORDING_NOTICE', true),
     // Only for the one-off verification capture. Twilio transcription is the
     // $0.05/min service this architecture exists to avoid, but a single
@@ -53,8 +63,11 @@ export const config = {
     otpDtmfDelaySeconds: Number(process.env.OTP_DTMF_DELAY_SECONDS ?? 7),
 
     // How long the employee's phone rings before voicemail takes over.
-    // Roughly two or three rings at 13s.
-    ringSeconds: Number(process.env.RING_SECONDS ?? 13),
+    // 20s is four or five rings, and sits just under the ~20-25s at which
+    // Rogers diverts to its own voicemail - past that the carrier answers
+    // first, Twilio reports "completed", and the message lands somewhere we
+    // never see. Do not raise this without re-measuring the divert.
+    ringSeconds: Number(process.env.RING_SECONDS ?? 20),
 
     // Voicemail. A business line that hangs up on an unanswered call is worse
     // than no line at all.
@@ -64,6 +77,40 @@ export const config = {
     // 24h window would need an approved template, which does not exist yet.
     notifyBySms: flag('VOICEMAIL_NOTIFY_SMS', true),
     smsFrom: process.env.TWILIO_SMS_FROM ?? '',
+  },
+
+  /**
+   * Menu answered before anyone's phone rings.
+   *
+   * Off by default on purpose. The straight-to-David flow above was tuned
+   * against a live carrier - ring time sits just under Rogers' own voicemail
+   * divert - and inserting a menu spends some of that budget. Turn it on
+   * deliberately, then re-measure the divert.
+   */
+  ivr: {
+    enabled: flag('IVR_ENABLED', false),
+    /** Seconds to wait for a keypress before assuming a rotary phone or a confused caller. */
+    gatherTimeoutSeconds: Number(process.env.IVR_GATHER_TIMEOUT ?? 6),
+    /** How many times to repeat the menu before falling through to a human. */
+    maxAttempts: Number(process.env.IVR_MAX_ATTEMPTS ?? 2),
+  },
+
+  /**
+   * Public media hosting for outbound WhatsApp attachments.
+   *
+   * WhatsApp fetches media by URL, which means anything we send has to be
+   * reachable from the public internet. Serving it straight out of the archive
+   * would expose customer recordings, so links are HMAC-signed, scoped to a
+   * single object and short-lived.
+   */
+  media: {
+    /** Falls back to the admin token so a deployment cannot accidentally sign with "". */
+    signingSecret: process.env.MEDIA_SIGNING_SECRET || process.env.ADMIN_TOKEN || '',
+    ttlSeconds: Number(process.env.MEDIA_URL_TTL_SECONDS ?? 3600),
+    /** Directory of files this service is willing to serve. Nothing outside it is reachable. */
+    root: process.env.MEDIA_ROOT ?? './media',
+    /** WhatsApp caps outbound media at 64MB; refuse earlier than the API does. */
+    maxBytes: Number(process.env.MEDIA_MAX_BYTES ?? 64 * 1024 * 1024),
   },
 
   vonage: {
@@ -84,6 +131,32 @@ export const config = {
     // Business Account exists. Same code, different host and from-number.
     messagesBaseUrl: process.env.VONAGE_MESSAGES_BASE_URL ?? 'https://api.nexmo.com',
     skipSignatureValidation: flag('VONAGE_SKIP_SIGNATURE_VALIDATION'),
+
+    /**
+     * Blue ticks. Cosmetic on a human account, load-bearing on an automated
+     * one: without it a customer watches an undelivered-looking message for
+     * however long the agent takes to think.
+     */
+    markRead: flag('WHATSAPP_MARK_READ', true),
+    /** The "typing..." bubble. Vonage dismisses it after 25s or on our reply. */
+    typingIndicator: flag('WHATSAPP_TYPING_INDICATOR', true),
+
+    /**
+     * Pull inbound photos, documents and voice notes onto our side.
+     *
+     * Vonage holds inbound media only briefly, so a message that is not
+     * fetched now is gone. Archiving is also what makes the retention promise
+     * true for attachments rather than only for call recordings.
+     */
+    downloadInboundMedia: flag('WHATSAPP_DOWNLOAD_MEDIA', true),
+    /** Refuse oversized inbound media rather than buffering it into memory. */
+    maxInboundBytes: Number(process.env.WHATSAPP_MAX_INBOUND_BYTES ?? 32 * 1024 * 1024),
+    /**
+     * Voice notes through whisper before Hermes sees them. This is the same
+     * argument as call transcription: the agent cannot hear, and the local
+     * model costs nothing per minute.
+     */
+    transcribeVoiceNotes: flag('WHATSAPP_TRANSCRIBE_VOICE_NOTES', true),
   },
 
   /**
@@ -114,12 +187,33 @@ export const config = {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
+    // Hermes configures itself; this is the one prompt we own, so the
+    // directive vocabulary is documented here rather than on its side.
     systemPrompt:
       process.env.HERMES_SYSTEM_PROMPT ??
-      'Tu es l assistant WhatsApp de DSS Multiservices, entreprise de services aux ' +
-        'immeubles au Quebec. Reponds dans la langue du client (francais ou anglais), ' +
-        'brievement et par messages courts adaptes a WhatsApp. Si tu ne sais pas, ' +
-        'dis-le et propose un rappel telephonique.',
+      [
+        "Tu es Esperancita, l'assistante WhatsApp de DSS Multiservices, entreprise de",
+        'services aux immeubles au Québec. Réponds dans la langue du client (français,',
+        'anglais ou espagnol), brièvement et par messages courts adaptés à WhatsApp.',
+        "Si tu ne sais pas, dis-le et propose un rappel téléphonique.",
+        '',
+        'Tu peux envoyer autre chose que du texte en plaçant des directives en début de',
+        'ligne. Chaque directive part seule sur sa ligne; tout le reste est envoyé comme',
+        'un message texte normal.',
+        '',
+        '  ::react 👍              réagir au message reçu',
+        '  ::unreact               retirer ta réaction',
+        '  ::reply                 citer le message reçu dans ta réponse',
+        '  ::image <url> | légende',
+        '  ::video <url> | légende',
+        '  ::file <url> | nom.pdf',
+        '  ::audio <url>           note vocale',
+        '  ::sticker <url>         .webp uniquement',
+        '  ::call                  proposer un appel vers la ligne DSS',
+        '',
+        "N'utilise que des URLs https publiques, ou des fichiers déjà déposés dans le",
+        'dossier média du service. Ne fabrique jamais une URL.',
+      ].join('\n'),
     // An agent round trip is far slower than an HTTP call; this is a ceiling
     // against a hung run, not an expected duration.
     timeoutMs: Number(process.env.HERMES_TIMEOUT_MS ?? 180_000),
@@ -147,6 +241,20 @@ if (whatsappConfigured && !config.vonage.signatureSecret && !config.vonage.skipS
     'Vonage is configured but VONAGE_SIGNATURE_SECRET is unset. Inbound webhooks ' +
       'would be unverifiable. Set the secret, or set VONAGE_SKIP_SIGNATURE_VALIDATION=1 ' +
       'for sandbox testing only.',
+  );
+}
+
+/**
+ * Serving media is opt-in by having a secret, not by a flag. An unsigned
+ * public file endpoint on a host that also stores customer recordings is not
+ * something to leave one typo away from being enabled.
+ */
+export const mediaHostingEnabled = config.media.signingSecret !== '';
+
+if (!mediaHostingEnabled) {
+  console.warn(
+    '[config] MEDIA_SIGNING_SECRET unset - outbound attachments are limited to ' +
+      'URLs that are already public. Local files cannot be sent.',
   );
 }
 

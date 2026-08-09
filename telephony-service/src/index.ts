@@ -1,8 +1,9 @@
 import express from 'express';
-import { config, whatsappConfigured } from './config.js';
+import { config, whatsappConfigured, mediaHostingEnabled } from './config.js';
 import { createStore } from './storage/index.js';
 import { createRoutes } from './routes/voice.js';
 import { createWhatsAppRoutes } from './routes/whatsapp.js';
+import { createMediaRoutes } from './routes/media.js';
 import { sweepRetention } from './pipeline/archive.js';
 import { hermesHealth } from './hermes.js';
 
@@ -22,9 +23,15 @@ app.use(createRoutes(store));
 // Mounted only when Vonage credentials are present, so a voice-only
 // deployment does not expose message endpoints that cannot work.
 if (whatsappConfigured) {
-  app.use(createWhatsAppRoutes());
+  app.use(createWhatsAppRoutes(store));
 } else {
   console.warn('[boot] Vonage not configured - WhatsApp routes not mounted');
+}
+
+// Only mounted when there is a secret to sign with. An unauthenticated public
+// file endpoint should require a deliberate act to exist, not a default.
+if (mediaHostingEnabled) {
+  app.use(createMediaRoutes());
 }
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -39,6 +46,14 @@ const server = app.listen(config.port, () => {
     publicBaseUrl: config.publicBaseUrl,
     retentionDays: config.storage.retentionDays,
     recordingNotice: config.voice.playRecordingNotice,
+    voice: {
+      tier: config.voice.tier,
+      fr: config.voice.voices.fr.voice,
+      en: config.voice.voices.en.voice,
+      es: config.voice.voices.es.voice,
+    },
+    ivr: config.ivr.enabled ? `on, ${config.ivr.maxAttempts} attempts` : 'off',
+    media: mediaHostingEnabled ? config.media.root : 'disabled',
     whatsapp: whatsappConfigured
       ? { from: config.vonage.whatsappNumber, api: config.vonage.messagesBaseUrl }
       : 'disabled',
