@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { config } from './config.js';
 import { downloadVonageMedia, type InboundWhatsApp } from './vonage.js';
 import { extensionFor } from './media.js';
-import { transcribeAudio } from './transcribe.js';
+import { transcribeMultilingual } from './transcribe.js';
 import type { RecordingStore } from './storage/index.js';
 
 /**
@@ -25,6 +25,8 @@ export interface ArchivedMedia {
   contentType: string;
   /** Only ever set for audio. */
   transcript?: string;
+  /** Which language the transcript was chosen as. Audio only. */
+  language?: string;
 }
 
 function mediaKey(uuid: string, contentType: string, at: Date): string {
@@ -82,12 +84,14 @@ export async function archiveInboundMedia(
     const archived: ArchivedMedia = { key, bytes: body.byteLength, contentType };
 
     if (message.kind === 'audio' && config.vonage.transcribeVoiceNotes) {
-      // A fixed language, not 'auto' - see config.transcription.voiceNoteLanguage
-      // for the measurements. Whisper's detector was confidently wrong on
-      // French, and a wrong detection produces phonetic nonsense rather than a
-      // degraded transcript.
-      const transcript = await transcribeAudio(body, config.transcription.voiceNoteLanguage);
-      if (transcript) archived.transcript = transcript;
+      // A voice note is a customer speaking, and customers use all three
+      // languages. One pass per candidate, best text wins - whisper's own
+      // detector was measured getting French wrong at p=0.93.
+      const result = await transcribeMultilingual(body);
+      if (result) {
+        archived.transcript = result.text;
+        archived.language = result.language;
+      }
     }
 
     console.log('[whatsapp-media] archived', {
@@ -127,7 +131,12 @@ export function describeForAgent(
 
     case 'audio':
       if (archived?.transcript) {
-        parts.push('[note vocale, transcrite automatiquement]');
+        // The detected language is stated because it is a guess the agent
+        // should be able to distrust - and because it tells Hermes which
+        // language to answer in when the transcript itself is mangled.
+        parts.push(
+          `[note vocale, transcrite automatiquement${archived.language ? `, langue detectee: ${archived.language}` : ''}]`,
+        );
         parts.push(archived.transcript);
       } else {
         parts.push('[note vocale reçue, transcription indisponible]');
