@@ -2,7 +2,8 @@ import { Router } from 'express';
 import twilio from 'twilio';
 import { config } from '../config.js';
 import { validateTwilioSignature, downloadRecording, sendSms } from '../twilio.js';
-import { transcribeAudio, transcribeMultilingual, extractVerificationCode } from '../transcribe.js';
+import { transcribeAudio, extractVerificationCode } from '../transcribe.js';
+import { transcribeAndStore } from '../pipeline/transcript.js';
 import { archiveRecording, type RecordingEvent } from '../pipeline/archive.js';
 import type { RecordingStore } from '../storage/index.js';
 import { lookupByNumber, type DirectoryEntry } from '../directory.js';
@@ -106,13 +107,14 @@ async function reportOtpCode(mediaUrl: string, recordingSid: string): Promise<vo
 }
 
 /**
- * Transcribes a voicemail, archives it, and tells the employee it exists.
- *
- * Order matters: transcription downloads the media, and archiving deletes the
- * Twilio copy at the end. Archive first and there is nothing left to transcribe.
+ * Archives a voicemail, transcribes it, and tells the employee it exists.
  *
  * A voicemail nobody is told about is the same as a hang-up, so the SMS is the
  * point of this function - the archive is bookkeeping.
+ *
+ * Runs inline rather than detached, unlike the answered-call path: Twilio has
+ * already been sent its TwiML and hung up, and the SMS depends on the
+ * transcript, so there is nothing to race.
  */
 async function handleVoicemail(
   store: RecordingStore,
@@ -125,27 +127,11 @@ async function handleVoicemail(
 
   console.log('[voicemail] received', { recordingSid, from, seconds });
 
-  let transcript: string | null = null;
-  try {
-    const wav = await downloadRecording(body.RecordingUrl!);
-    // A voicemail is a customer, not an employee - one pass per language the
-    // customers actually use, best text wins.
-    const result = await transcribeMultilingual(wav);
-    transcript = result?.text ?? null;
-    if (result) {
-      console.log('[voicemail] transcript', {
-        recordingSid,
-        language: result.language,
-        text: result.text,
-      });
-    }
-  } catch (err) {
-    console.error('[voicemail] transcription failed', {
-      recordingSid,
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-
+  // Archive first, then transcribe out of our own store. This used to run the
+  // other way round - transcribe from Twilio, then archive - because archival
+  // deletes the Twilio copy and would otherwise leave nothing to transcribe.
+  // Reading the archive back removes that ordering hazard, and means the
+  // transcript can be regenerated later from the same source.
   const outcome = await archiveRecording(store, {
     recordingSid,
     callSid: body.CallSid ?? '',
@@ -155,6 +141,28 @@ async function handleVoicemail(
     employeeId: employee?.employeeId,
   });
   console.log('[voicemail] archived', { recordingSid, status: outcome.status });
+
+  let transcript: string | null = null;
+  if (outcome.status !== 'failed') {
+    const result = await transcribeAndStore(store, {
+      recordingSid,
+      callSid: body.CallSid ?? '',
+      key: outcome.key,
+      from,
+      to: body.To,
+      employeeId: employee?.employeeId,
+      direction: 'voicemail',
+      durationSeconds: seconds,
+    });
+    if (result) {
+      transcript = result.transcript.text;
+      console.log('[voicemail] transcript', {
+        recordingSid,
+        languages: result.transcript.languages,
+        text: transcript,
+      });
+    }
+  }
 
   if (!config.voice.notifyBySms || !employee?.forwardTo) return;
   if (!config.voice.smsFrom) {
@@ -444,6 +452,29 @@ export function createRoutes(store: RecordingStore): Router {
       return;
     }
     res.status(200).json(outcome);
+
+    // Detached, and after the response: a bilingual call is transcribed per
+    // utterance and per candidate language, which takes far longer than Twilio
+    // will wait. Failure here must not turn an archived recording into a
+    // retried webhook - the audio is already safe, and a transcript can always
+    // be rebuilt from it later.
+    if (config.transcription.transcribeCalls && outcome.status === 'archived') {
+      void transcribeAndStore(store, {
+        recordingSid,
+        callSid: event.callSid,
+        key: outcome.key,
+        from: body.From,
+        to: body.To,
+        employeeId: employee?.employeeId,
+        direction: 'call',
+        durationSeconds: event.durationSeconds,
+      }).catch((err) =>
+        console.error('[transcript] call transcription failed', {
+          recordingSid,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
   });
 
   return router;

@@ -43,9 +43,11 @@ export async function transcribeAudio(
     const resampled = path.join(workdir, '16k.wav');
     await writeFile(source, audio);
 
-    // whisper.cpp only accepts 16 kHz mono. Twilio records 8 kHz, and dual
-    // channel for real calls - downmixing loses which speaker said what, so
-    // if diarization matters later, transcribe the channels separately.
+    // whisper.cpp only accepts 16 kHz mono. Twilio records 8 kHz and dual
+    // channel, so this downmixes - which loses who said what, and forces one
+    // language on a possibly bilingual call. segment.ts is the path that keeps
+    // both; do not "fix" this by splitting channels here without cutting the
+    // silence out, because whisper hallucinates through the quiet half.
     await run(config.transcription.ffmpegPath, [
       '-hide_banner', '-loglevel', 'error', '-y',
       '-i', source,
@@ -114,6 +116,79 @@ export async function transcribeMultilingual(
     scores: choice.scores,
   });
   return { text: choice.text, language: choice.lang };
+}
+
+/**
+ * Runs whisper against an already-prepared 16 kHz mono file.
+ *
+ * The buffer-based functions above write a temp file and resample on every
+ * call. Utterance transcription does that once for the whole recording and
+ * then runs many times, so paying it per segment - and per candidate language
+ * within a segment - would dominate the work.
+ */
+export async function transcribeWavFile(
+  wavPath: string,
+  language: string,
+): Promise<string | null> {
+  if (!config.transcription.enabled) return null;
+  try {
+    const output = await run(config.transcription.whisperPath, [
+      '-m', config.transcription.modelPath,
+      '-f', wavPath,
+      '-l', language,
+      '-nt',
+    ]);
+    const text = output.trim();
+    return text.length > 0 ? text : null;
+  } catch (err) {
+    console.error('[stt] segment transcription failed', {
+      wavPath,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/**
+ * Same, deciding the language by scoring the output text.
+ *
+ * `hint` skips the whole multi-pass exercise when the answer is already known -
+ * the staff side of a call, or an utterance too short to score, where a guess
+ * would be worse than an inherited answer.
+ */
+export async function transcribeWavFileMultilingual(
+  wavPath: string,
+  candidates: string[],
+  fallback: string,
+  hint?: string,
+): Promise<{ text: string; language: string; confident: boolean } | null> {
+  if (hint) {
+    const text = await transcribeWavFile(wavPath, hint);
+    return text ? { text, language: hint, confident: false } : null;
+  }
+
+  const languages = candidates.length > 0 ? candidates : [fallback];
+  if (languages.length === 1) {
+    const text = await transcribeWavFile(wavPath, languages[0]!);
+    return text ? { text, language: languages[0]!, confident: false } : null;
+  }
+
+  const results: Candidate[] = [];
+  for (const lang of languages) {
+    const text = await transcribeWavFile(wavPath, lang);
+    if (text) results.push({ lang, text });
+  }
+
+  const choice = pickBestTranscript(results, fallback, config.transcription.languageMinScore);
+  if (!choice) return null;
+
+  return {
+    text: choice.text,
+    language: choice.lang,
+    // Whether the scorer actually distinguished the candidates, or fell back.
+    // Callers use this to decide what to carry forward to the next utterance.
+    confident: choice.score >= config.transcription.languageMinScore,
+  };
 }
 
 /**

@@ -59,6 +59,15 @@ export class LocalStore implements RecordingStore {
     };
   }
 
+  async get(key: string): Promise<Buffer | null> {
+    try {
+      return await readFile(this.resolve(key));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw err;
+    }
+  }
+
   async listExpired(cutoff: Date): Promise<string[]> {
     const rootAbs = path.resolve(this.root);
     const expired: string[] = [];
