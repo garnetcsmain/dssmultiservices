@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { config } from './config.js';
+import { pickBestTranscript, type Candidate } from './language.js';
 
 /**
  * Local speech-to-text via whisper.cpp.
@@ -16,21 +17,18 @@ import { config } from './config.js';
  * enrichment step - a broken model path or a missing binary must never take
  * down call archival, which is the part that cannot be redone later.
  */
-export async function transcribeWav(wav: Buffer): Promise<string | null> {
-  return transcribeAudio(wav);
-}
 
 /**
- * Transcribes any audio ffmpeg can decode.
+ * Transcribes any audio ffmpeg can decode, in one known language.
  *
  * Call recordings arrive as 8 kHz WAV; WhatsApp voice notes arrive as OGG
  * Opus. Both go through the same resample, because ffmpeg probes the content
  * rather than trusting the extension - so the container never has to be
  * declared here.
  *
- * `language` overrides the configured default. Calls are answered in a known
- * language; an inbound voice note is whatever the customer speaks, so that
- * path passes 'auto'.
+ * Use this only where the language is genuinely known, such as Meta's English
+ * verification robot. When it is not, use transcribeMultilingual: passing a
+ * wrong language here produces phonetic nonsense, not a worse transcript.
  */
 export async function transcribeAudio(
   audio: Buffer,
@@ -72,6 +70,50 @@ export async function transcribeAudio(
   } finally {
     if (workdir) await rm(workdir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/**
+ * Transcribes audio whose language is not known in advance.
+ *
+ * Runs one pass per candidate and scores the resulting text, because whisper's
+ * audio-side detector was measured getting French wrong at p=0.93. Scoring the
+ * output instead of the input is a far easier problem - see language.ts.
+ *
+ * Affordable only because transcription is local. Three passes on the base
+ * model cost about 5s of our own CPU for a short clip; against a per-minute
+ * API this would be an obviously bad trade.
+ *
+ * Sequential rather than parallel: whisper already saturates the cores it is
+ * given, so running three at once would contend rather than overlap.
+ */
+export async function transcribeMultilingual(
+  audio: Buffer,
+  candidates: string[] = config.transcription.clientLanguages,
+  fallback: string = config.transcription.language,
+): Promise<{ text: string; language: string } | null> {
+  if (!config.transcription.enabled) return null;
+
+  const languages = candidates.length > 0 ? candidates : [fallback];
+  if (languages.length === 1) {
+    const text = await transcribeAudio(audio, languages[0]!);
+    return text ? { text, language: languages[0]! } : null;
+  }
+
+  const results: Candidate[] = [];
+  for (const lang of languages) {
+    const text = await transcribeAudio(audio, lang);
+    if (text) results.push({ lang, text });
+  }
+
+  const choice = pickBestTranscript(results, fallback, config.transcription.languageMinScore);
+  if (!choice) return null;
+
+  console.log('[stt] language chosen', {
+    picked: choice.lang,
+    score: Number(choice.score.toFixed(4)),
+    scores: choice.scores,
+  });
+  return { text: choice.text, language: choice.lang };
 }
 
 /**

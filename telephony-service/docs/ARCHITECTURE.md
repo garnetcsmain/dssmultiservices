@@ -278,13 +278,20 @@ That path was exercised inside the container, not assumed: WhatsApp sends
 OGG/Opus rather than WAV, and ffmpeg decodes it in 0.13s with whisper adding
 1.7s on the base model for a 9-second clip.
 
-**Language is the unsolved part.** `auto` detected a French clip as English at
-p=0.93, and the failure is not a degraded transcript but phonetic nonsense. A
-fixed `fr` handles English fine and mangles Spanish. There is no setting that
-serves all three, so `WHISPER_VOICE_NOTE_LANGUAGE` defaults to French on
-customer count and the archive key travels with every transcript so a human can
-listen when the text looks wrong. Measurements were on synthesised speech and
-deserve re-running against a real voice note.
+**Language is decided on the text, not the audio.** Whisper's own detector
+called a French clip English at p=0.93, and the failure is not a degraded
+transcript but phonetic nonsense. A fixed `fr` handles English fine and mangles
+Spanish. Since no single setting serves all three, customer audio is
+transcribed once per candidate language and the results are scored on how much
+each looks like the language it claims to be — grammar survives a mangled pass
+where content words do not. Three local passes cost ~5s of our own CPU, which
+is only a reasonable trade because nobody bills us per minute.
+
+Who is speaking is the actual variable, and it splits four ways: customers use
+all three languages, DSS employees are mostly Spanish-speaking, and Meta's
+verification robot only ever speaks English. The employee setting is inert
+until dual-channel recordings are transcribed per channel rather than
+downmixed — which is now justified twice over, by diarization and by language.
 
 Reactions are recorded but do not trigger an agent run. A thumbs-up is an
 acknowledgement, and answering one would cost a completion and earn the
@@ -420,10 +427,10 @@ contact's 24-hour window needs an approved template, and none exists.
 - Three stale recordings on Twilio, including a consumed OTP
 - No real inbound call has ever run: voicemail, archive and the SMS
   notification are untested against an actual caller
-- `WHISPER_LANGUAGE=en` in maple's `.env` transcribes French voicemail as
-  English; the code default is now `fr` but the deployment overrides it
-- Voice-note language has no setting that serves French, English and Spanish
-  at once — Spanish currently transcribes as nonsense
+- `WHISPER_LANGUAGE=en` in maple's `.env` is now only the tie-break fallback,
+  but it is still the wrong one for this customer base — set it to `fr`
+- Employee-side language (mostly Spanish) is inert until dual-channel
+  recordings are transcribed per channel instead of downmixed
 - Hermes prompt tokens (~33k/message) remain unmeasured and appear on no
   telephony invoice
 - The IVR is verified against the running service but has never carried a real

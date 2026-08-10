@@ -2,7 +2,7 @@ import { Router } from 'express';
 import twilio from 'twilio';
 import { config } from '../config.js';
 import { validateTwilioSignature, downloadRecording, sendSms } from '../twilio.js';
-import { transcribeWav, extractVerificationCode } from '../transcribe.js';
+import { transcribeAudio, transcribeMultilingual, extractVerificationCode } from '../transcribe.js';
 import { archiveRecording, type RecordingEvent } from '../pipeline/archive.js';
 import type { RecordingStore } from '../storage/index.js';
 import { lookupByNumber, type DirectoryEntry } from '../directory.js';
@@ -84,7 +84,9 @@ async function reportOtpCode(mediaUrl: string, recordingSid: string): Promise<vo
       }
     }
 
-    const transcript = await transcribeWav(wav!);
+    // Meta's robot reads digits in English. Pinned rather than guessed - a
+    // French pass over English numerals is exactly how a code gets mangled.
+    const transcript = await transcribeAudio(wav!, config.transcription.otpLanguage);
     if (!transcript) {
       console.warn('[otp] no transcript - play the recording manually', { recordingSid });
       return;
@@ -126,8 +128,17 @@ async function handleVoicemail(
   let transcript: string | null = null;
   try {
     const wav = await downloadRecording(body.RecordingUrl!);
-    transcript = await transcribeWav(wav);
-    if (transcript) console.log('[voicemail] transcript', { recordingSid, text: transcript });
+    // A voicemail is a customer, not an employee - one pass per language the
+    // customers actually use, best text wins.
+    const result = await transcribeMultilingual(wav);
+    transcript = result?.text ?? null;
+    if (result) {
+      console.log('[voicemail] transcript', {
+        recordingSid,
+        language: result.language,
+        text: result.text,
+      });
+    }
   } catch (err) {
     console.error('[voicemail] transcription failed', {
       recordingSid,

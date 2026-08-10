@@ -168,32 +168,49 @@ export const config = {
     whisperPath: process.env.WHISPER_CLI_PATH ?? 'whisper-cli',
     modelPath: process.env.WHISPER_MODEL_PATH ?? '',
     ffmpegPath: process.env.FFMPEG_PATH ?? 'ffmpeg',
+
+    /**
+     * Fallback language, used when nothing better is known and when the
+     * multilingual pass cannot tell the candidates apart.
+     */
     language: process.env.WHISPER_LANGUAGE ?? 'fr',
 
     /**
-     * Language for inbound WhatsApp voice notes.
+     * Languages a *customer* might speak. Clients use all three, so anything
+     * coming from the outside - voicemail, WhatsApp voice notes - is
+     * transcribed once per candidate and the best result is chosen by scoring
+     * the text. See language.ts for why the audio-side detector is not used.
      *
-     * There is no good value here, only a least-bad one. Measured in the
-     * container on maple, 2026-08-09, against synthesised speech:
-     *
-     *   -l auto  on French  -> detected "en" at p=0.93 (base), 0.89 (small),
-     *                          0.56 (large-v3-turbo). All three wrong, and the
-     *                          output is phonetic nonsense, not a degraded
-     *                          transcript: "Il-Wai on Fou-Aitou A Yusau sold".
-     *   -l fr    on English -> clean, correct English. Costs nothing.
-     *   -l fr    on Spanish -> nonsense: "Ola, Wenoz Dias, Heyunifuga Diagwin".
-     *
-     * So auto fails on French and a fixed 'fr' fails on Spanish. French wins
-     * by customer count, not by being safe. A Spanish voice note will produce
-     * garbage until someone sets this differently or the language is known.
-     *
-     * Caveat worth keeping: those measurements are macOS `say` output, not
-     * human speech, and TTS prosody is exactly the kind of thing that throws
-     * language detection. Whisper is generally strong on French. Re-run this
-     * against a real voice note before trusting any of it - and note the
-     * archive key travels with the transcript, so a human can always listen.
+     * Set this to a single language to skip the extra passes entirely.
      */
-    voiceNoteLanguage: process.env.WHISPER_VOICE_NOTE_LANGUAGE ?? 'fr',
+    clientLanguages: (process.env.WHISPER_CLIENT_LANGUAGES ?? 'fr,en,es')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+
+    /**
+     * Language the *staff* speak, which is not the same question. DSS
+     * employees are mostly Spanish-speaking while their customers are not, so
+     * the employee side of a call has a known answer and needs no guessing.
+     *
+     * Only useful once dual-channel recordings are transcribed per channel -
+     * see the note in the call archive. Downmixed audio mixes both sides and
+     * neither setting fits.
+     */
+    employeeLanguage: process.env.WHISPER_EMPLOYEE_LANGUAGE ?? 'es',
+
+    /**
+     * Meta's verification robot reads digits in English and nothing else.
+     * Pinned rather than guessed: this path exists to extract a six-digit
+     * code, and a French pass over an English robot would mangle the numbers.
+     */
+    otpLanguage: process.env.WHISPER_OTP_LANGUAGE ?? 'en',
+
+    /**
+     * Below which score the multilingual pass admits it cannot tell and falls
+     * back. Short utterances ("oui", "ok") carry no grammar to measure.
+     */
+    languageMinScore: Number(process.env.WHISPER_LANGUAGE_MIN_SCORE ?? 0.04),
     timeoutMs: Number(process.env.WHISPER_TIMEOUT_MS ?? 300_000),
   },
 

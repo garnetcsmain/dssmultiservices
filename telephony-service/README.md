@@ -305,30 +305,49 @@ inside the running container rather than assumed:
 | same clip, small-q5_1 | 5.5s |
 | same clip, large-v3-turbo-q5_0 | 22–43s — 5× realtime, too slow to be worth it |
 
-### Language is an unsolved edge, not a solved one
+### Language: score the text, not the audio
 
-`WHISPER_VOICE_NOTE_LANGUAGE` defaults to `fr`. It is **not** `auto`, and the
-reason is measured:
+Whisper's own language detection is not usable here. Measured:
 
 - `-l auto` on French was detected as **English** — p=0.93 on base, 0.89 on
-  small, 0.56 on large-v3-turbo. All three wrong. The result is not a worse
-  transcript, it is phonetic nonsense.
-- `-l fr` on English audio returns clean English. That hint costs nothing.
-- `-l fr` on Spanish audio returns nonsense.
+  small, 0.56 on large-v3-turbo. All three wrong, confidently. The output is
+  not a worse transcript, it is phonetic nonsense.
+- `-l fr` on English audio returns clean English. A wrong hint can cost nothing.
+- `-l fr` on Spanish audio returns nonsense: `Ola, Wenoz Dias, Heyunifuga`.
 
-So `auto` breaks French and a fixed `fr` breaks Spanish. French wins on
-customer count, not on safety. **A Spanish voice note will transcribe as
-garbage** until this is set differently.
+So neither `auto` nor any single fixed language serves all three. Instead
+`transcribeMultilingual` runs **one pass per candidate language and scores the
+resulting text** on how much it looks like the language it claims to be
+(`src/language.ts`). Grammar is what survives: whisper cannot produce "il y a"
+from Spanish audio, so the French pass on French audio wins even when every
+content word is mangled.
 
-Caveat that matters: those samples are macOS `say` output, not human speech,
-and TTS prosody is exactly what throws language detection. Whisper is generally
-strong on French. Re-measure with a real voice note before trusting any of it.
-The archive key travels with every transcript precisely so a human can listen
-when the text looks wrong.
+Only affordable because transcription is local — three passes of the base model
+on a short clip is ~5s of our own CPU. Against a per-minute API this would be
+an obviously bad trade.
 
-Note also that `WHISPER_LANGUAGE` (used for **calls**, not voice notes) is
-currently `en` in maple's `.env`, so a French voicemail is being transcribed as
-English today. The code default is now `fr`; the deployed env still overrides it.
+**Who is speaking decides the setting**, and that is not one question but four:
+
+| Source | Who | Setting |
+|---|---|---|
+| WhatsApp voice note | customer | `WHISPER_CLIENT_LANGUAGES=fr,en,es` |
+| Voicemail | customer | same |
+| Employee side of a call | staff, mostly Spanish | `WHISPER_EMPLOYEE_LANGUAGE=es` |
+| Meta verification call | a robot reading digits | `WHISPER_OTP_LANGUAGE=en`, pinned |
+
+Set `WHISPER_CLIENT_LANGUAGES` to one language to skip the extra passes.
+`WHISPER_LANGUAGE` is the fallback for when scoring cannot decide — short
+utterances like "oui" carry no grammar to measure.
+
+**The employee setting does nothing yet.** Dual-channel recordings are still
+downmixed before transcription, which mixes both sides so neither language
+fits. Splitting the channels is what makes it apply, and there are now two
+reasons to do it: diarization and language.
+
+Caveat: the measurements above are macOS `say` output, not human speech, and
+TTS prosody is exactly what throws language detection. The scorer is tested
+against those real mangled transcripts, but re-measure with an actual voice
+note before trusting the numbers.
 
 The model lives at `~/dss-telephony/models/ggml-base-q5_0.bin` on maple, mounted
 read-only at `/models`. It used to be borrowed from a sibling project's
