@@ -104,6 +104,32 @@ the TwiML itself, so it needs no console configuration.
 Add each provisioned number to `src/directory.ts`. A call to a number with no
 directory entry gets an apology and a hangup rather than a dead bridge.
 
+## Operating maple
+
+Connect as **`fsulbaran`**, never as root:
+
+```bash
+ssh fsulbaran@maple
+```
+
+The account is in the `docker` group, so nothing here needs `sudo`. `noctis@` and
+`freddy@` are refused by the tailnet ACL — that is a policy rule, not a failed
+login, and retrying will not fix it.
+
+Running Docker as root here has a specific, delayed cost: Compose creates
+missing bind-mount directories as whoever ran it, so `sudo docker compose up`
+leaves `recordings/` and `deadletter/` owned by `root:root` — and the container,
+which drops to a non-root uid, then cannot write to either. Nothing complains
+until the first real call, when archival fails and the dead-letter meant to
+record that failure fails with it.
+
+Set `SERVICE_UID`/`SERVICE_GID` in `.env` to the owner of `./recordings` (1000
+for `fsulbaran` on maple). Check it before trusting a deploy:
+
+```bash
+docker exec dss-telephony sh -c 'touch /app/recordings/.probe && rm /app/recordings/.probe && echo writable'
+```
+
 ## Tests
 
 ```bash
