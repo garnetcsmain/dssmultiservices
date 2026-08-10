@@ -17,6 +17,15 @@ export interface RecordingStore {
   put(key: string, body: Buffer, metadata: Record<string, string>): Promise<void>;
   /** Returns null when the key is absent. Never throws on absence. */
   stat(key: string): Promise<StoredObject | null>;
+  /**
+   * Reads an object back.
+   *
+   * Transcription runs after archival, by which point the Twilio copy is gone -
+   * so the archive is the only source left. Reading from here rather than
+   * keeping the download in memory also means a transcript can be regenerated
+   * later, when the model or the language handling improves.
+   */
+  get(key: string): Promise<Buffer | null>;
   /** Keys whose stored timestamp is older than the cutoff. */
   listExpired(cutoff: Date): Promise<string[]>;
   remove(key: string): Promise<void>;
@@ -41,4 +50,22 @@ export function recordingKey(recordingSid: string, startedAt: Date): string {
   const mm = String(startedAt.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(startedAt.getUTCDate()).padStart(2, '0');
   return `recordings/${yyyy}/${mm}/${dd}/${recordingSid}.wav`;
+}
+
+/**
+ * Transcript key for a recording. Sits beside the audio deliberately: whoever
+ * finds one finds the other, and a date prefix is what makes "everything from
+ * last Tuesday" answerable without an index.
+ */
+export function transcriptKey(recordingKeyOrSid: string): string {
+  return recordingKeyOrSid.endsWith('.wav')
+    ? recordingKeyOrSid.replace(/\.wav$/, '.transcript.json')
+    : `${recordingKeyOrSid}.transcript.json`;
+}
+
+/** Summary key. Same prefix as the audio and the transcript, for the same reason. */
+export function summaryKey(recordingKeyOrSid: string): string {
+  return recordingKeyOrSid.endsWith('.wav')
+    ? recordingKeyOrSid.replace(/\.wav$/, '.summary.json')
+    : `${recordingKeyOrSid}.summary.json`;
 }

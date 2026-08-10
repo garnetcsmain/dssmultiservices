@@ -212,6 +212,52 @@ export const config = {
      */
     languageMinScore: Number(process.env.WHISPER_LANGUAGE_MIN_SCORE ?? 0.04),
     timeoutMs: Number(process.env.WHISPER_TIMEOUT_MS ?? 300_000),
+
+    /**
+     * Transcribe answered calls, not only voicemail.
+     *
+     * Every conversation is meant to end up as text - for the record, and as
+     * material for whatever reads it downstream. Off by default because it is
+     * the expensive path: a call is transcribed per utterance and per
+     * candidate language, so a long bilingual call is a lot of local CPU.
+     */
+    transcribeCalls: flag('TRANSCRIBE_CALLS', false),
+
+    /**
+     * Silence detection, which is what makes per-utterance language possible.
+     *
+     * -35 dB and 0.6s were read off real recordings from the 450 line. Twilio
+     * dual-channel audio is quiet on the inactive side but not digitally
+     * silent - the other party bleeds across at around -47 dB - so the
+     * threshold has to sit between the two.
+     */
+    silenceThresholdDb: Number(process.env.WHISPER_SILENCE_DB ?? -35),
+    silenceMinSeconds: Number(process.env.WHISPER_SILENCE_MIN_SECONDS ?? 0.6),
+    /** Shorter bursts are breaths and crosstalk; transcribing them invents text. */
+    minUtteranceSeconds: Number(process.env.WHISPER_MIN_UTTERANCE_SECONDS ?? 0.8),
+    /** Natural speech pauses. Cutting on every one leaves whisper no context. */
+    maxGapSeconds: Number(process.env.WHISPER_MAX_GAP_SECONDS ?? 0.8),
+    /**
+     * Past this, give up on segmenting and transcribe the file whole. A worse
+     * transcript beats an unbounded pile of whisper invocations.
+     */
+    maxUtterances: Number(process.env.WHISPER_MAX_UTTERANCES ?? 200),
+    /**
+     * Below this length an utterance carries no grammar to score, so it
+     * inherits the language of the conversation so far rather than guessing.
+     */
+    minScoreableSeconds: Number(process.env.WHISPER_MIN_SCOREABLE_SECONDS ?? 2.5),
+
+    /**
+     * Have Hermes summarise each transcript and pull out the follow-ups.
+     *
+     * A transcript is a record; a summary is what makes it usable. Costs one
+     * agent completion per call, which is the line item on this project most
+     * likely to surprise - every summary logs its token counts.
+     */
+    summariseCalls: flag('SUMMARISE_CALLS', false),
+    /** Below this, the transcript is already shorter than any summary of it. */
+    summaryMinChars: Number(process.env.SUMMARY_MIN_CHARS ?? 120),
   },
 
   /**

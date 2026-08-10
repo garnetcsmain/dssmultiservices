@@ -135,6 +135,59 @@ export async function dispatchToHermes(
   return { status: 'reply', text, actions };
 }
 
+/**
+ * One-shot completion, for work that is not a conversation with a customer.
+ *
+ * Call summaries go through here rather than through dispatchToHermes: there
+ * is no contact, no allowlist to check and no reply to send, and giving it a
+ * per-recording session id keeps a summary from landing in the transcript
+ * history of whoever happened to phone in.
+ */
+export async function completeOnce(
+  system: string,
+  user: string,
+  session: string,
+): Promise<string | null> {
+  if (!config.hermes.enabled) return null;
+  if (!config.hermes.apiUrl || !config.hermes.apiKey) return null;
+
+  const response = await fetch(`${config.hermes.apiUrl.replace(/\/$/, '')}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.hermes.apiKey}`,
+      'Content-Type': 'application/json',
+      'X-Hermes-Session-Id': session,
+      'X-Hermes-Session-Key': session,
+    },
+    body: JSON.stringify({
+      model: config.hermes.model,
+      stream: false,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+    signal: AbortSignal.timeout(config.hermes.timeoutMs),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hermes returned ${response.status}: ${(await response.text()).slice(0, 200)}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+
+  console.log('[hermes] one-shot completion', {
+    session,
+    promptTokens: data.usage?.prompt_tokens,
+    completionTokens: data.usage?.completion_tokens,
+  });
+
+  return data.choices?.[0]?.message?.content?.trim() || null;
+}
+
 /** Liveness probe, for startup logging and the health endpoint. */
 export async function hermesHealth(): Promise<string> {
   if (!config.hermes.apiUrl) return 'not configured';

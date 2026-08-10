@@ -213,6 +213,77 @@ costs fractions of a cent; losing one is unrecoverable.
 The webhook returns 500 on failure so Twilio retries, and `archiveRecording` is
 idempotent so retries are safe.
 
+## From audio to something readable
+
+Every recording produces three artifacts, side by side under the same date
+prefix so they are found and expire together:
+
+```
+recordings/2026/08/10/RE….wav              the audio
+recordings/2026/08/10/RE….transcript.json  who said what, when, in which language
+recordings/2026/08/10/RE….summary.json     what it was about and what to do
+```
+
+### Why the transcript is built per utterance
+
+Whisper assigns **one language to the whole audio**. It is not a per-phrase
+classifier. On a real bilingual call from the 450 line it chose French at
+p=0.91 and pushed all 46 seconds through a French model, so the English and
+Spanish stretches came back as French phonetics — "Le SSC", "je vais besoin des
+emplois". In Montreal that is the normal case, not an edge case.
+
+So the recording is cut into utterances first: silence detection per channel,
+then a language decision per piece. That also solves a second problem found the
+same evening — splitting the stereo file into two whole-channel files makes
+things *worse*, because each channel is mostly silence while the other person
+talks and whisper invents text to fill it ("ça va t'expliquer pour les
+autorités", nine times). Cutting the silence out is what prevents it.
+
+Utterances too short to carry gradeable grammar inherit the language of the
+last confident one. People switch language between thoughts, not between "oui"
+and the sentence it answers.
+
+**A correction worth keeping.** The staff side was originally pinned to Spanish,
+on the grounds that DSS employees mostly speak it. Measured against a real call,
+that was wrong: David was speaking French and English, and every one of his
+utterances came back forced through Spanish — "Ok, el beso de la abril, chiquo,
+la lura" out of ordinary French. It was a prior, not a fact. Both sides are now
+scored across all three candidates, and the prior survives only as the
+tie-break for utterances too short to score.
+
+### Model choice
+
+Measured on that same call, which is now the reference fixture:
+
+| Model | Time for 46s | Verdict |
+|---|---|---|
+| base-q5_0 | 52s | invents English where there is French |
+| small-q5_1 | 131s | closer, still garbles |
+| **large-v3-turbo-q5_0** | **616s** | the only one to produce "les fonds de salubrité santé" |
+
+large-v3-turbo wins on content and costs roughly **13× realtime**. That is
+affordable at current volume and is the reason `WHISPER_MODEL` is a variable
+rather than a constant. The obvious lever if it ever falls behind is the three
+language passes per utterance: turbo's own detector is far better than base's,
+so one pass with `-l auto` would cut the cost threefold. Untested — the
+measurement takes ten minutes per run.
+
+### Summaries
+
+A transcript is a record; a summary is what makes it usable. Hermes reads the
+transcript and returns a summary, the follow-up actions, and a topic. It is
+already the brain of this service and already reachable, so summarising at write
+time costs one completion and saves every later reader from re-deriving it.
+
+The reply is parsed from labelled sections rather than JSON — the same
+reasoning as the WhatsApp directives. A model that fumbles JSON returns nothing
+usable; a model that fumbles a heading still returns prose a human can read, and
+an unparseable reply becomes the summary verbatim rather than disappearing.
+
+The transcript is handed over labelled as unreliable data and explicitly not as
+instructions, because it is unreviewed text from an outside caller arriving at
+an agent.
+
 ## WhatsApp
 
 ```mermaid
