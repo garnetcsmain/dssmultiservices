@@ -29,7 +29,12 @@ services:
       # reachable over a signed public url, and customer recordings must not be.
       MEDIA_ROOT: /app/media
       WHISPER_CLI_PATH: /usr/local/bin/whisper-cli
-      WHISPER_MODEL_PATH: /models/ggml-base-q5_0.bin
+      # Overridable from .env. large-v3-turbo beat base and small on a real
+      # bilingual call from the 450 line - it was the only one to get
+      # "les fonds de salubrité santé" rather than inventing English - at
+      # roughly 13x realtime instead of 1x. Worth it while call volume is low;
+      # revisit the moment transcription starts falling behind.
+      WHISPER_MODEL_PATH: ${WHISPER_MODEL:-/models/ggml-large-v3-turbo-q5_0.bin}
       FFMPEG_PATH: /usr/bin/ffmpeg
       PORT: "8080"
     ports:

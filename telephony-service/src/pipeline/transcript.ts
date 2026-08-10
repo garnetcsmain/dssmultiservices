@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { transcriptKey, type RecordingStore } from '../storage/index.js';
 import { findUtterances, extractUtterance, probeChannels } from '../segment.js';
 import { transcribeWavFileMultilingual, transcribeMultilingual } from '../transcribe.js';
+import { summariseAndStore, type CallSummary } from './summary.js';
 
 /**
  * Turns an archived recording into a stored transcript.
@@ -217,7 +218,7 @@ function finish(input: TranscribeInput, segments: TranscriptSegment[]): CallTran
 export async function transcribeAndStore(
   store: RecordingStore,
   input: TranscribeInput,
-): Promise<{ key: string; transcript: CallTranscript } | null> {
+): Promise<{ key: string; transcript: CallTranscript; summary?: CallSummary } | null> {
   const transcript = await transcribeRecording(store, input);
   if (!transcript) return null;
 
@@ -237,5 +238,19 @@ export async function transcribeAndStore(
     languages: transcript.languages,
     chars: transcript.text.length,
   });
-  return { key, transcript };
+
+  // The summary is an enrichment on top of a record that is already safe. A
+  // failing agent, or one that is simply switched off, must not cost us the
+  // transcript we just wrote.
+  let summary: CallSummary | undefined;
+  try {
+    summary = (await summariseAndStore(store, transcript))?.summary;
+  } catch (err) {
+    console.error('[summary] failed, transcript kept', {
+      recordingSid: input.recordingSid,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return { key, transcript, summary };
 }

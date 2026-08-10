@@ -62,3 +62,10 @@ export function transcriptKey(recordingKeyOrSid: string): string {
     ? recordingKeyOrSid.replace(/\.wav$/, '.transcript.json')
     : `${recordingKeyOrSid}.transcript.json`;
 }
+
+/** Summary key. Same prefix as the audio and the transcript, for the same reason. */
+export function summaryKey(recordingKeyOrSid: string): string {
+  return recordingKeyOrSid.endsWith('.wav')
+    ? recordingKeyOrSid.replace(/\.wav$/, '.summary.json')
+    : `${recordingKeyOrSid}.summary.json`;
+}

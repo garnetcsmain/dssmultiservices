@@ -364,7 +364,40 @@ inside the running container rather than assumed:
 | `ffmpeg` OGG/Opus → 16 kHz mono | 0.13s, libopus present |
 | `whisper-cli`, base-q5_0, 8.6s clip | **1.7s** |
 | same clip, small-q5_1 | 5.5s |
-| same clip, large-v3-turbo-q5_0 | 22–43s — 5× realtime, too slow to be worth it |
+| same clip, large-v3-turbo-q5_0 | 22–43s |
+
+### Every call is transcribed and summarised
+
+`TRANSCRIBE_CALLS=1` extends transcription from voicemail to answered calls;
+`SUMMARISE_CALLS=1` has Hermes turn each transcript into a summary, a topic and
+a list of follow-ups. Each recording produces three files side by side, sharing
+a date prefix so they are found and expire together:
+
+```
+RE….wav   RE….transcript.json   RE….summary.json
+```
+
+The transcript is built **per utterance**, not per file: silence detection
+splits each channel into turns and the language is decided for each one. That
+is what makes a Montreal call legible — whisper assigns a single language to
+whatever you hand it, so a whole-file pass renders the English half of a
+bilingual call as French phonetics.
+
+Model choice, measured on a real bilingual call from the 450 line:
+
+| Model | 46s call | |
+|---|---|---|
+| base-q5_0 | 52s | invents English where there is French |
+| small-q5_1 | 131s | closer, still garbles |
+| **large-v3-turbo-q5_0** | **616s** | the only one to get "les fonds de salubrité santé" |
+
+**Throughput is the thing to watch.** That is roughly 13× realtime with three
+language passes per utterance, so a 3-minute call costs about 40 minutes of
+CPU. Fine at current volume, and it runs detached after the webhook has already
+answered — but it is the first thing that will fall behind. The lever is the
+three passes: turbo's own detector is much better than base's, so a single
+`-l auto` pass would cut it threefold. Untested; each measurement is ten
+minutes.
 
 ### Language: score the text, not the audio
 
@@ -393,8 +426,14 @@ an obviously bad trade.
 |---|---|---|
 | WhatsApp voice note | customer | `WHISPER_CLIENT_LANGUAGES=fr,en,es` |
 | Voicemail | customer | same |
-| Employee side of a call | staff, mostly Spanish | `WHISPER_EMPLOYEE_LANGUAGE=es` |
+| Employee side of a call | staff, mostly Spanish | `WHISPER_EMPLOYEE_LANGUAGE=es` — **tie-break only** |
 | Meta verification call | a robot reading digits | `WHISPER_OTP_LANGUAGE=en`, pinned |
+
+That employee row is a **prior, not a fact**, and treating it as a fact was
+measurably wrong: on a real call David was speaking French and English, and
+pinning his channel to Spanish returned "Ok, el beso de la abril, chiquo, la
+lura" out of ordinary French. Both sides are now scored across all candidates;
+the setting survives only as the tie-break for utterances too short to score.
 
 Set `WHISPER_CLIENT_LANGUAGES` to one language to skip the extra passes.
 `WHISPER_LANGUAGE` is the fallback for when scoring cannot decide — short

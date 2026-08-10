@@ -247,6 +247,17 @@ export const config = {
      * inherits the language of the conversation so far rather than guessing.
      */
     minScoreableSeconds: Number(process.env.WHISPER_MIN_SCOREABLE_SECONDS ?? 2.5),
+
+    /**
+     * Have Hermes summarise each transcript and pull out the follow-ups.
+     *
+     * A transcript is a record; a summary is what makes it usable. Costs one
+     * agent completion per call, which is the line item on this project most
+     * likely to surprise - every summary logs its token counts.
+     */
+    summariseCalls: flag('SUMMARISE_CALLS', false),
+    /** Below this, the transcript is already shorter than any summary of it. */
+    summaryMinChars: Number(process.env.SUMMARY_MIN_CHARS ?? 120),
   },
 
   /**
