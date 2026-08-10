@@ -5,6 +5,23 @@ services:
     container_name: dss-telephony
     restart: unless-stopped
     env_file: .env
+
+    # Runs as the host user that owns the bind mounts, not as the image's
+    # built-in uid.
+    #
+    # This is not cosmetic. Compose creates missing bind-mount directories as
+    # whoever ran it, so `sudo docker compose up` leaves recordings/ and
+    # deadletter/ owned by root:root 755 - and the image's uid 10001 then
+    # cannot write to either. The failure is invisible until the first real
+    # call, at which point archival fails AND the dead-letter meant to record
+    # that failure fails too. (The Twilio copy survives, because deletion is
+    # gated on a verified write, so nothing is lost - but nothing is kept
+    # locally either.)
+    #
+    # Set SERVICE_UID/SERVICE_GID to the owner of ./recordings. Still non-root,
+    # so the reason the image drops privileges is intact.
+    user: "${SERVICE_UID:-10001}:${SERVICE_GID:-10001}"
+
     environment:
       # Container paths, overriding whatever the .env carried over from a laptop.
       LOCAL_STORAGE_ROOT: /app/recordings

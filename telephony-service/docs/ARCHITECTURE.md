@@ -425,6 +425,8 @@ contact's 24-hour window needs an approved template, and none exists.
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
 - Three stale recordings on Twilio, including a consumed OTP
+- The archive directories on maple are root-owned, so the container cannot
+  write to them; fixed in compose but not yet applied to the deployment
 - No real inbound call has ever run: voicemail, archive and the SMS
   notification are untested against an actual caller
 - `WHISPER_LANGUAGE=en` in maple's `.env` is now only the tie-break fallback,
