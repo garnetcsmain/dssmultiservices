@@ -355,9 +355,57 @@ and the recording pipeline already applies.
 | Image | Node 20 + ffmpeg + whisper.cpp, non-root user |
 | Model | `ggml-base-q5_0.bin` as a read-only volume |
 | Secrets | `.env`, mode 600, including the Vonage PEM inline |
+| Source on maple | a **loose copy**, not a git clone — sync with rsync |
 
 Host 8090 because signal-cli holds 8080. Funnel allows only 443, 8443 and 10000;
 the first two were taken by n8n and another webhook.
+
+`~/dss-telephony` on maple is not a checkout, so `git pull` does nothing there.
+Deploys are an rsync of the source excluding `.env`, `node_modules`, `dist`,
+`recordings`, `deadletter`, `models` and `media`, then a rebuild.
+
+### The container runs as the volume owner
+
+`SERVICE_UID`/`SERVICE_GID` set the container's uid to whoever owns the bind
+mounts. This is not tidiness.
+
+Compose creates missing bind-mount directories as whoever runs it, so bringing
+the service up under `sudo` left `recordings/` and `deadletter/` owned by
+`root:root` while the container ran as uid 10001. The container could not write
+to either, and nothing said so: archival would have failed on the first real
+call, and the dead-letter meant to record that failure would have failed with
+it. The Twilio copy survives — deletion is gated on a verified write — so
+nothing would be lost, but nothing would be kept locally either.
+
+The lesson generalises past this one bug. Operate maple as `fsulbaran`, and
+check writability after a deploy rather than assuming it:
+
+```
+docker exec dss-telephony sh -c 'touch /app/recordings/.probe && rm /app/recordings/.probe'
+```
+
+### Availability depends on Tailscale, not just on maple
+
+The public webhook URL reaches us through Funnel, which ingresses at Tailscale's
+edge. On 2026-08-10 maple lost its DERP relay and its connection to Tailscale's
+control plane for about thirty minutes:
+
+```
+derp.Recv(derp-21): connect to region 21 (tor): context deadline exceeded
+PollNetMap: Post ".../machine/map": context deadline exceeded
+```
+
+The line was genuinely unreachable from the outside during that window. What
+makes this worth writing down is that **nothing in the service noticed**: the
+host never rebooted, the container never restarted, its logs stayed clean, and
+the archive counters read zero exactly as they would on a quiet night. Diagnose
+this class of outage with `journalctl -u tailscaled` on maple, never with
+`docker logs`.
+
+maple routes via a relay rather than a direct connection, so a third party's
+availability is inside the dependency chain of a customer-facing phone line.
+That is a reasonable trade for a lab box and a deliberate decision to revisit
+for a business line.
 
 whisper.cpp is compiled in a build stage rather than installed on maple, so the
 host keeps its Node 18 and gains no build toolchain.
@@ -425,12 +473,10 @@ contact's 24-hour window needs an approved template, and none exists.
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
 - Three stale recordings on Twilio, including a consumed OTP
-- The archive directories on maple are root-owned, so the container cannot
-  write to them; fixed in compose but not yet applied to the deployment
 - No real inbound call has ever run: voicemail, archive and the SMS
   notification are untested against an actual caller
-- `WHISPER_LANGUAGE=en` in maple's `.env` is now only the tie-break fallback,
-  but it is still the wrong one for this customer base — set it to `fr`
+- The line's reachability depends on Tailscale's control plane and a DERP
+  relay, with no alerting when either drops
 - Employee-side language (mostly Spanish) is inert until dual-channel
   recordings are transcribed per channel instead of downmixed
 - Hermes prompt tokens (~33k/message) remain unmeasured and appear on no

@@ -83,11 +83,46 @@ host keeps its Node 18 and gains no build toolchain. The model is a read-only
 volume (`./models`) rather than baked into the image, so it can be swapped
 without a rebuild.
 
+`~/dss-telephony` on maple is a **loose copy, not a git clone** — `git pull`
+there does nothing. A deploy is an rsync followed by a rebuild:
+
 ```bash
-cd ~/dss-telephony && docker compose up -d --build
+rsync -a --delete --exclude='.env*' --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/
 ```
 
-Redeploy after code changes: rsync `src/` up, then the same command.
+```bash
+ssh fsulbaran@maple 'cd ~/dss-telephony && docker compose up -d --build'
+```
+
+Then confirm it, rather than assuming. The boot line should name the generative
+voices, a `media` root and a healthy Hermes; the probe should print `writable`:
+
+```bash
+ssh fsulbaran@maple 'docker logs dss-telephony | head -20 && docker exec dss-telephony sh -c "touch /app/recordings/.probe && rm /app/recordings/.probe && echo writable"'
+```
+
+Rebuilds leave large dangling layers behind — 19 of them reached 35 GB. Prune
+occasionally; it never touches the tagged image in use:
+
+```bash
+ssh fsulbaran@maple 'docker image prune -f'
+```
+
+### Watching a live call
+
+```bash
+ssh fsulbaran@maple 'docker logs -f dss-telephony'
+```
+
+An unanswered call should log, in order: `[voice] unanswered, offering
+voicemail` with `outcome: no-answer`, then `[voicemail] received`, `[stt]
+language chosen` with all three scores, `[voicemail] transcript`, `[voicemail]
+archived`, `[voicemail] employee notified`.
+
+The line to distrust is `[voice] call ended` with `outcome: completed` when
+nobody actually answered. That is the carrier's own voicemail winning the race,
+and it is indistinguishable from success in every log we keep — the only
+reliable signal is whether the caller heard our greeting or the carrier's.
 
 ## Setup
 
@@ -463,6 +498,17 @@ an architecture that records and archives every call. Deflection to the PSTN
 line — where the IVR answers and the recording pipeline applies — is the
 working path.
 
+### Deployed state (verified 2026-08-10)
+
+Live on maple and confirmed at boot: generative `Chirp3-HD-Aoede` in all three
+languages, the signed media root mounted, Hermes reachable (`ok v0.20.0`) with a
+two-number allowlist, and the archive writable. Through the public URL,
+`/health` answers 200 while both an unsigned `/media` request and an unsigned
+Twilio webhook are refused with 403.
+
+The IVR is **off**. Turning it on means spending part of the 20-second ring
+window, so re-measure the Rogers divert with the menu enabled before trusting it.
+
 ### Account state (verified 2026-08-09)
 
 | | |
@@ -579,11 +625,12 @@ Sandbox does not sign its webhooks, so it needs
   branch never runs, and the message lands somewhere we never see — looking like
   success in every log we keep. Ring time is held at 20s to stay under it; the
   durable fix is disabling the carrier divert.
-- **Voice-note language is a coin toss for Spanish.** See the transcription
-  section — `auto` breaks French and a fixed `fr` breaks Spanish, and the
-  measurements behind that were on synthesised speech.
-- **`WHISPER_LANGUAGE=en` on maple** means French voicemails transcribe as
-  English today. The code default is now `fr`; the deployed `.env` overrides it.
+- **Language selection is unproven on human speech.** The multilingual scorer is
+  tested against real mangled whisper output, but the audio behind it was macOS
+  `say`, not a person. The first real French or Spanish voicemail is the test.
+- **The line can go dark without the service noticing.** Reachability depends on
+  Tailscale's control plane and a DERP relay; when they dropped for 30 minutes
+  on 2026-08-10 the container logs stayed clean throughout. No alerting exists.
 - **Hermes prompt tokens are unmeasured and could dominate.** ~33k per message
   at last look, on no telephony invoice. Every reply logs `promptTokens`.
 - **Toll-free verification.** The requirement was truncated in the brief. Twilio's
