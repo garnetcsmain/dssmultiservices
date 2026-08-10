@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { completeOnce } from '../hermes.js';
-import { summaryKey, type RecordingStore } from '../storage/index.js';
+import { summaryKey, transcriptKey, type RecordingStore } from '../storage/index.js';
 import type { CallTranscript } from './transcript.js';
 
 /**
@@ -25,6 +25,12 @@ import type { CallTranscript } from './transcript.js';
 export interface CallSummary {
   recordingSid: string;
   callSid: string;
+  /**
+   * Both keys, spelled out. These are the handles a downstream reader follows
+   * to get back to the source, and a field named transcriptKey that actually
+   * held the audio key - as this did - is worse than no field at all.
+   */
+  recordingKey: string;
   transcriptKey: string;
   direction: 'call' | 'voicemail';
   from?: string;
@@ -130,7 +136,8 @@ export async function summariseTranscript(
   return {
     recordingSid: transcript.recordingSid,
     callSid: transcript.callSid,
-    transcriptKey: transcript.key,
+    recordingKey: transcript.key,
+    transcriptKey: transcriptKey(transcript.key),
     direction: transcript.direction,
     from: transcript.from,
     to: transcript.to,
