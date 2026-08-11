@@ -243,6 +243,29 @@ Utterances too short to carry gradeable grammar inherit the language of the
 last confident one. People switch language between thoughts, not between "oui"
 and the sentence it answers.
 
+### The sidecar is what outlives the webhook
+
+Transcription is fired detached, after the webhook has already answered Twilio.
+That is deliberate — a bilingual call takes minutes and Twilio will not wait —
+but it means a restart, a crash or a transient whisper failure leaves a
+recording archived and silently untranscribed, with no queue to be stuck in. So
+the backlog is derived from the store itself: a `.wav` with no
+`.transcript.json` beside it *is* the work list, swept on a timer.
+
+What the sweep knows is only what the archive wrote down. Every recording gets a
+`RE….wav.meta.json` sidecar (object metadata on GCS, a file on disk locally),
+and that sidecar is the single durable record of who called whom.
+
+**A correction worth keeping.** The sweep originally skipped the sidecar, on the
+stated theory that the metadata "is gone with the webhook". It is not, and the
+damage was visible downstream: a swept recording produced a transcript with an
+empty `callSid` and `durationSeconds: 0`, which reached the summariser as fact.
+It duly reported that the call lasted zero seconds and the caller could not be
+identified, and invented a follow-up task to go check the original audio. An
+empty field is not neutral — it is an assertion, and something further down the
+line will believe it. The archive now also records `from`, `to` and `direction`,
+which the webhook had all along and nobody had thought to keep.
+
 **A correction worth keeping.** The staff side was originally pinned to Spanish,
 on the grounds that DSS employees mostly speak it. Measured against a real call,
 that was wrong: David was speaking French and English, and every one of his

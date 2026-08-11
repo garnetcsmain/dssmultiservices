@@ -68,6 +68,26 @@ export class LocalStore implements RecordingStore {
     }
   }
 
+  async metadata(key: string): Promise<Record<string, string> | null> {
+    let raw: Buffer;
+    try {
+      raw = await readFile(`${this.resolve(key)}.meta.json`);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw err;
+    }
+    try {
+      // `bytes` goes in as a number, so normalise rather than assume: callers
+      // get one shape whichever driver answered.
+      const parsed = JSON.parse(raw.toString('utf8')) as Record<string, unknown>;
+      return Object.fromEntries(Object.entries(parsed).map(([k, v]) => [k, String(v)]));
+    } catch {
+      // A sidecar we cannot parse is a sidecar we do not have. Never worth
+      // failing a transcription over.
+      return null;
+    }
+  }
+
   async list(prefix: string): Promise<string[]> {
     const rootAbs = path.resolve(this.root);
     const keys: string[] = [];

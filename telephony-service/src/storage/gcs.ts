@@ -66,6 +66,17 @@ export class GcsStore implements RecordingStore {
     }
   }
 
+  async metadata(key: string): Promise<Record<string, string> | null> {
+    const bucket = await this.bucketPromise;
+    try {
+      const [meta] = await bucket.file(key).getMetadata();
+      return (meta.metadata ?? {}) as Record<string, string>;
+    } catch (err) {
+      if ((err as { code?: number }).code === 404) return null;
+      throw err;
+    }
+  }
+
   async list(prefix: string): Promise<string[]> {
     const bucket = await this.bucketPromise;
     const [files] = await bucket.getFiles({ prefix });
