@@ -264,6 +264,34 @@ export const config = {
     /** Below this detection probability, 'auto' defers rather than guessing. */
     autoMinProbability: Number(process.env.WHISPER_AUTO_MIN_PROBABILITY ?? 0.6),
 
+    /**
+     * Group consecutive turns from one speaker into a single whisper call.
+     * 0 disables it, which is the default, and the reason is measured.
+     *
+     * The saving is real: whisper encodes a 30-second window whatever you hand
+     * it - ~14.4s of encode for a 5-second clip - so short utterances pay for
+     * time they never use. Packing the reference call at 28s took it from 616s
+     * to 347s, a 44% cut.
+     *
+     * It also cost accuracy, on the one turn that mattered. Unpacked, the agent
+     * side came back as "Ok. J'ai besoin de savoir c'est quoi le..." and
+     * "S-F-C". Packed, those merged into a single Spanish-scored blob that
+     * degenerated into "Se puede saber que se puede saber que se puede saber".
+     *
+     * Transcript accuracy is the priority here and a late summary is
+     * acceptable, so this stays off. Turn it on only if throughput starts to
+     * matter more than getting the words right.
+     */
+    packSeconds: Number(process.env.WHISPER_PACK_SECONDS ?? 0),
+
+    /**
+     * Threads per whisper invocation. Measured on maple's 12 cores against the
+     * reference call: 4 (the default) took 44.7s, 8 took 35.0s, and 12 took
+     * 41.6s - past 8 it contends with everything else on the box rather than
+     * going faster.
+     */
+    threads: Number(process.env.WHISPER_THREADS ?? 8),
+
     /** How many untranscribed recordings one backlog sweep will take on. */
     sweepLimit: Number(process.env.WHISPER_SWEEP_LIMIT ?? 5),
     /** Minutes between backlog sweeps. */

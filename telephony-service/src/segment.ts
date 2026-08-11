@@ -186,7 +186,10 @@ export async function findUtterances(file: string): Promise<Utterance[]> {
     Array.from({ length: channels }, (_, channel) => detectChannel(file, channel, channels)),
   );
 
-  const all = perChannel.flat().sort((a, b) => a.startMs - b.startMs);
+  const all = packUtterances(
+    perChannel.flat().sort((a, b) => a.startMs - b.startMs),
+    config.transcription.packSeconds,
+  );
 
   if (all.length > config.transcription.maxUtterances) {
     console.warn('[segment] too many utterances, falling back to whole-file', {
@@ -196,6 +199,56 @@ export async function findUtterances(file: string): Promise<Utterance[]> {
     return [];
   }
   return all;
+}
+
+/**
+ * Groups consecutive utterances from the same speaker into whisper-sized turns.
+ *
+ * This is the single biggest lever on transcription cost, and it took a
+ * measurement to find. Breaking down one invocation on a 5-second clip:
+ *
+ *   load time  =    241 ms
+ *   encode time = 14,441 ms
+ *
+ * The model load is nothing. The encoder is everything - and whisper always
+ * encodes a full 30-second window regardless of how short the audio is. A
+ * 2-second "oui" costs exactly what half a minute of speech costs.
+ *
+ * So splitting a call into sixteen utterances and running three language passes
+ * over each meant 48 invocations, each paying for 30 seconds it did not use, on
+ * a recording only 46 seconds long. That was the 13x realtime - not the model,
+ * and not the language strategy that was blamed for it first.
+ *
+ * Packing by *span* rather than by concatenating clips keeps this simple and
+ * keeps the timestamps honest. It is safe because neighbouring utterances have
+ * already been coalesced across gaps under maxGapSeconds, so a pack is a turn
+ * in the conversation rather than an arbitrary window with silence inside.
+ *
+ * The cost is granularity: language is now decided per turn instead of per
+ * utterance. Someone who switches language mid-turn is transcribed in whichever
+ * dominates. That is a real loss, and a much smaller one than the alternative.
+ */
+export function packUtterances(utterances: Utterance[], maxSeconds: number): Utterance[] {
+  // 0 means leave every turn alone. See config: packing is faster and, on the
+  // reference call, measurably less accurate.
+  if (maxSeconds <= 0) return utterances.map((u) => ({ ...u }));
+
+  const packed: Utterance[] = [];
+
+  for (const utterance of utterances) {
+    const previous = packed[packed.length - 1];
+    const merged =
+      previous &&
+      previous.channel === utterance.channel &&
+      (utterance.endMs - previous.startMs) / 1000 <= maxSeconds;
+
+    // Only merges with the immediately preceding pack, so a pack never spans
+    // the other party talking in between - the speaker attribution has to hold.
+    if (merged) previous.endMs = Math.max(previous.endMs, utterance.endMs);
+    else packed.push({ ...utterance });
+  }
+
+  return packed;
 }
 
 /** Extracts one utterance as 16 kHz mono, which is all whisper.cpp accepts. */

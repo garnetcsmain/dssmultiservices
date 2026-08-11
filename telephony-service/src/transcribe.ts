@@ -60,6 +60,7 @@ export async function transcribeAudio(
       '-f', resampled,
       '-l', language,
       '-nt',
+      '-t', String(config.transcription.threads),
     ]);
 
     const text = output.trim();
@@ -137,6 +138,7 @@ export async function transcribeWavFile(
       '-f', wavPath,
       '-l', language,
       '-nt',
+      '-t', String(config.transcription.threads),
     ]);
     const text = output.trim();
     return text.length > 0 ? text : null;
@@ -171,6 +173,7 @@ export async function transcribeWavFileAuto(
       '-f', wavPath,
       '-l', 'auto',
       '-nt',
+      '-t', String(config.transcription.threads),
     ]);
 
     const detected = /auto-detected language:\s*([a-z]{2})\s*\(p\s*=\s*([\d.]+)\)/i.exec(stderr);
