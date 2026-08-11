@@ -44,6 +44,11 @@ const FRANCISCA = '+14385006595'; // relay: two-way in normal operation
 const DAVID = '+15144637712';
 const FREDDY = '+17276136004';
 const CUSTOMER = '+15145551234';
+// Stands in for any number the fallback has no route for. Deliberately not a
+// real number on the account: the account does carry one unrouted number
+// (+1 438 817 8400, another project's), and pinning these tests to it would
+// turn "someone finally configured that number" into a confusing test failure.
+const UNKNOWN = '+14389999999';
 
 test('every line in the directory is covered by the fallback', async () => {
   // The drift guard. A number added to the directory without regenerating this
@@ -116,7 +121,7 @@ test('a staff reply on the relay line is refused to their face, not dropped', as
 
 test('a text to an unknown line is answered with silence', async () => {
   const handler = await load('sms');
-  const xml = handler({ To: '+14388178400', From: CUSTOMER, Body: 'hello', NumMedia: '0' });
+  const xml = handler({ To: UNKNOWN, From: CUSTOMER, Body: 'hello', NumMedia: '0' });
   assert.ok(!xml.includes('<Message'));
 });
 
@@ -148,7 +153,7 @@ test('the fallback never records', async () => {
 
 test('an unrouted call is told something, not hung up on in silence', async () => {
   const handler = await load('voice');
-  const xml = handler({ To: '+14388178400', From: CUSTOMER });
+  const xml = handler({ To: UNKNOWN, From: CUSTOMER });
   assert.match(xml, /<Say/);
   assert.ok(!xml.includes('<Dial'), 'an unknown line must not bridge anywhere');
 });

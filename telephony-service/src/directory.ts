@@ -63,6 +63,12 @@ export function smsMode(entry: DirectoryEntry): 'relay' | 'notify' {
  *   +1 226 277 0423  Vonage  Ontario (Kitchener-Waterloo). Not linked to any
  *                    Vonage application.
  *
+ * Also on the Twilio account and deliberately absent from this table:
+ *   +1 438 817 8400  "TuFamilia CA- 8400" belongs to a different project. It
+ *                    has no handlers of any kind and must not get any here -
+ *                    adding it would route someone else's traffic to DSS staff.
+ *                    Left alone on purpose; it is not an oversight to correct.
+ *
  * A blank `forwardTo` routes to the "not yet assigned" message rather than
  * bridging nowhere, so half-configured entries fail loudly.
  */
