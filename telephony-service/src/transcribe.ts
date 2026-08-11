@@ -19,6 +19,27 @@ import { pickBestTranscript, type Candidate } from './language.js';
  */
 
 /**
+ * Vocabulary hint for one pass.
+ *
+ * The shared list is language-neutral - names, acronyms, streets - and the
+ * per-language part carries the trade vocabulary. They are kept apart because
+ * every candidate pass is compared against the others to decide the language:
+ * attaching French terms to the Spanish pass would bias that pass toward
+ * French and quietly rig the comparison it feeds.
+ *
+ * Pass no language (the auto path) and only the neutral half applies.
+ */
+function promptFor(language?: string): string[] {
+  const parts = [config.transcription.prompt];
+  if (language) {
+    const specific = config.transcription.promptByLanguage[language];
+    if (specific) parts.push(specific);
+  }
+  const prompt = parts.filter(Boolean).join(' ').trim();
+  return prompt ? ['--prompt', prompt] : [];
+}
+
+/**
  * Transcribes any audio ffmpeg can decode, in one known language.
  *
  * Call recordings arrive as 8 kHz WAV; WhatsApp voice notes arrive as OGG
@@ -60,6 +81,8 @@ export async function transcribeAudio(
       '-f', resampled,
       '-l', language,
       '-nt',
+      '-t', String(config.transcription.threads),
+      ...promptFor(language),
     ]);
 
     const text = output.trim();
@@ -137,11 +160,56 @@ export async function transcribeWavFile(
       '-f', wavPath,
       '-l', language,
       '-nt',
+      '-t', String(config.transcription.threads),
+      ...promptFor(language),
     ]);
     const text = output.trim();
     return text.length > 0 ? text : null;
   } catch (err) {
     console.error('[stt] segment transcription failed', {
+      wavPath,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/**
+ * One pass, letting whisper name the language itself.
+ *
+ * The scoring path below runs once per candidate, which is three times the
+ * work. That was the right trade against the base model, whose detector called
+ * a French clip English at p=0.93. large-v3-turbo is a different proposition,
+ * and on a real call it identified French at p=0.91 - so where the model is
+ * good enough, one pass buys back two thirds of the cost.
+ *
+ * Returns the detected language alongside the text; whisper.cpp prints it on
+ * stderr, which `run` folds into the same stream.
+ */
+export async function transcribeWavFileAuto(
+  wavPath: string,
+): Promise<{ text: string; language: string; probability: number } | null> {
+  if (!config.transcription.enabled) return null;
+  try {
+    const { stdout, stderr } = await runBoth(config.transcription.whisperPath, [
+      '-m', config.transcription.modelPath,
+      '-f', wavPath,
+      '-l', 'auto',
+      '-nt',
+      '-t', String(config.transcription.threads),
+      ...promptFor(),
+    ]);
+
+    const detected = /auto-detected language:\s*([a-z]{2})\s*\(p\s*=\s*([\d.]+)\)/i.exec(stderr);
+    const text = stdout.trim();
+    if (!text) return null;
+    return {
+      text,
+      language: detected?.[1] ?? config.transcription.language,
+      probability: Number(detected?.[2] ?? 0),
+    };
+  } catch (err) {
+    console.error('[stt] auto-detect transcription failed', {
       wavPath,
       error: err instanceof Error ? err.message : String(err),
     });
@@ -207,7 +275,20 @@ export function extractVerificationCode(transcript: string, digits = 6): string 
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
 }
 
-function run(command: string, args: string[]): Promise<string> {
+async function run(command: string, args: string[]): Promise<string> {
+  return (await runBoth(command, args)).stdout;
+}
+
+/**
+ * Both streams, because whisper.cpp splits them: the transcript goes to
+ * stdout, while everything it reports about its own work - including the
+ * language it detected - goes to stderr. Reading only stdout, as this used to,
+ * makes auto-detection look like it silently always chose the fallback.
+ */
+function runBoth(
+  command: string,
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
@@ -216,7 +297,7 @@ function run(command: string, args: string[]): Promise<string> {
     child.stderr.on('data', (d) => (stderr += d));
     child.on('error', (err) => reject(new Error(`${command}: ${err.message}`)));
     child.on('close', (code) => {
-      if (code === 0) resolve(stdout);
+      if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(`${command} exited ${code}: ${stderr.slice(-300)}`));
     });
 

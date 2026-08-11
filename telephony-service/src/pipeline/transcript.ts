@@ -4,7 +4,11 @@ import path from 'node:path';
 import { config } from '../config.js';
 import { transcriptKey, type RecordingStore } from '../storage/index.js';
 import { findUtterances, extractUtterance, probeChannels } from '../segment.js';
-import { transcribeWavFileMultilingual, transcribeMultilingual } from '../transcribe.js';
+import {
+  transcribeWavFileMultilingual,
+  transcribeWavFileAuto,
+  transcribeMultilingual,
+} from '../transcribe.js';
 import { summariseAndStore, type CallSummary } from './summary.js';
 
 /**
@@ -93,6 +97,29 @@ function candidatesFor(speaker: Speaker): { candidates: string[]; fallback: stri
   };
 }
 
+/**
+ * Single-pass transcription, deferring when whisper is unsure.
+ *
+ * A low-probability detection is not a language, it is a shrug. Carrying the
+ * previous utterance's language through those is what keeps "ok" and "oui"
+ * from being scattered across three languages inside one conversation.
+ */
+async function transcribeAuto(
+  clip: string,
+  fallback: string,
+  inherited?: string,
+): Promise<{ text: string; language: string; confident: boolean } | null> {
+  const result = await transcribeWavFileAuto(clip);
+  if (!result?.text) return null;
+
+  const confident = result.probability >= config.transcription.autoMinProbability;
+  return {
+    text: result.text,
+    language: confident ? result.language : (inherited ?? fallback),
+    confident,
+  };
+}
+
 export async function transcribeRecording(
   store: RecordingStore,
   input: TranscribeInput,
@@ -156,7 +183,11 @@ export async function transcribeRecording(
       // between thoughts, not between "oui" and the sentence it answers.
       const inherited =
         seconds < config.transcription.minScoreableSeconds ? lastConfident : undefined;
-      const result = await transcribeWavFileMultilingual(clip, candidates, fallback, inherited);
+
+      const result =
+        config.transcription.languageStrategy === 'auto'
+          ? await transcribeAuto(clip, fallback, inherited)
+          : await transcribeWavFileMultilingual(clip, candidates, fallback, inherited);
 
       await rm(clip, { force: true }).catch(() => {});
       if (!result?.text) continue;
@@ -206,6 +237,63 @@ function finish(input: TranscribeInput, segments: TranscriptSegment[]): CallTran
     // Speaker-prefixed so the flat form is still readable as a conversation.
     text: segments.map((s) => `[${s.speaker}] ${s.text}`).join('\n'),
   };
+}
+
+/**
+ * Transcribes recordings that never got a transcript.
+ *
+ * The webhook path fires transcription detached, so a crash, a restart mid-run
+ * or a transient whisper failure leaves a recording archived and silently
+ * untranscribed - and nothing ever notices, because there is no queue to be
+ * stuck in. This is the same trick the host-side summariser uses: derive the
+ * work list from the store itself, where a `.wav` with no `.transcript.json`
+ * beside it *is* the backlog.
+ *
+ * Bounded per run. A backlog after a long outage should drain over several
+ * passes rather than pin every core for an afternoon.
+ */
+export async function sweepTranscripts(
+  store: RecordingStore,
+  limit = config.transcription.sweepLimit,
+): Promise<number> {
+  if (!config.transcription.enabled || !config.transcription.transcribeCalls) return 0;
+
+  const keys = await store.list('recordings/');
+  const audio = keys.filter((key) => key.endsWith('.wav'));
+  const transcripts = new Set(keys.filter((key) => key.endsWith('.transcript.json')));
+
+  const missing = audio.filter((key) => !transcripts.has(transcriptKey(key)));
+  if (missing.length === 0) return 0;
+
+  console.log('[transcript] backlog found', { missing: missing.length, limit });
+
+  let done = 0;
+  for (const key of missing.slice(0, limit)) {
+    // The sid is the filename; the rest of the metadata is gone with the
+    // webhook, which is why the transcript records less for a swept recording
+    // than for one done inline. Better thin than absent.
+    const recordingSid = path.basename(key, '.wav');
+    try {
+      const result = await transcribeAndStore(store, {
+        recordingSid,
+        callSid: '',
+        key,
+        direction: 'call',
+        durationSeconds: 0,
+      });
+      if (result) done += 1;
+    } catch (err) {
+      console.error('[transcript] sweep failed for one recording', {
+        key,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (missing.length > limit) {
+    console.log('[transcript] backlog not drained', { remaining: missing.length - limit });
+  }
+  return done;
 }
 
 /**

@@ -261,12 +261,63 @@ Measured on that same call, which is now the reference fixture:
 | small-q5_1 | 131s | closer, still garbles |
 | **large-v3-turbo-q5_0** | **616s** | the only one to produce "les fonds de salubrité santé" |
 
-large-v3-turbo wins on content and costs roughly **13× realtime**. That is
-affordable at current volume and is the reason `WHISPER_MODEL` is a variable
-rather than a constant. The obvious lever if it ever falls behind is the three
-language passes per utterance: turbo's own detector is far better than base's,
-so one pass with `-l auto` would cut the cost threefold. Untested — the
-measurement takes ten minutes per run.
+Later measured against the full `large-v3` as well, once ground truth for the
+call was known — the caller had been trying to say **"Fonds des services de
+santé"**, in French, and fumbling it:
+
+| | at 0:31 | verdict |
+|---|---|---|
+| large-v3-turbo | `les fonds de salubrité santé` (fr) | right language, nearly the phrase |
+| large-v3 | `los fondos de salud` (es) | right meaning, wrong language |
+
+**turbo wins, and it is not the intuitive answer** — the bigger model is not the
+more accurate one here. It costs twice the disk and produced different answers
+rather than better ones. Without asking what was actually said, this comparison
+was unresolvable; both outputs are plausible and they disagree.
+
+### Where the cost actually is
+
+The three language passes were blamed for the 13× first, and that was wrong.
+Measured, one `-l auto` pass took **668s against 616s** for three scored passes
+— slower, and it labelled an "OK OK" as Korean, a language not among the
+candidates.
+
+The real breakdown, for one invocation on a 5-second clip:
+
+```
+load time  =    241 ms
+encode time = 14,441 ms
+```
+
+Whisper encodes a **30-second window whatever it is given**. Sixteen utterances
+× three languages is 48 invocations each paying for half a minute it never
+used, on a call 46 seconds long. That is the 13×.
+
+Packing consecutive same-speaker turns up to 28s cuts it to 347s — 44% — and is
+implemented, tested and **off by default**, because it merged three turns into
+one Spanish-scored blob and turned "J'ai besoin de savoir c'est quoi le… S-F-C"
+into "Se puede saber que se puede saber que se puede saber". Transcript accuracy
+is the priority and a late summary is acceptable, so throughput loses.
+
+What is applied, because it costs nothing: **8 threads** per invocation instead
+of the default 4. Measured on maple's 12 cores — 4 threads 44.7s, 8 threads
+35.0s, 12 threads 41.6s. Past 8 it contends with the rest of the box.
+
+### Vocabulary hints
+
+`--prompt` biases whisper toward terms it has little reason to know. "Fonds des
+services de santé" coming back as "fonds de salubrité santé" is exactly the
+shape of error a glossary fixes: trade vocabulary, acronyms and Quebec street
+names, said all day here and rarely anywhere else.
+
+Split per language, and deliberately so. Every candidate pass is compared
+against the others to decide the language, so attaching French terms to the
+Spanish pass would bias that pass toward French and rig the comparison it
+feeds. Only the shared half — names, acronyms, streets — is language-neutral.
+
+The risk to watch is bleed: an initial prompt can push a model into emitting
+glossary terms nobody said, especially on unclear audio. Keep the list short,
+and check a transcript after changing it.
 
 ### Where the summary runs, and why it is not in the container
 

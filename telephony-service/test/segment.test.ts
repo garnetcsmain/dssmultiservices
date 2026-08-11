@@ -82,3 +82,56 @@ test('a full pass over one channel produces sane speech intervals', () => {
     { start: 9.4, end: 20 },
   ]);
 });
+
+/**
+ * Packing utterances into whisper-sized turns. This is the biggest lever on
+ * transcription cost — whisper encodes a 30-second window whatever you hand
+ * it — so a bug that stops packing would quietly restore a 13x bill.
+ */
+import { packUtterances } from '../src/segment.js';
+
+const u = (channel: number, startMs: number, endMs: number) => ({ channel, startMs, endMs });
+
+test('consecutive turns from one speaker merge up to the window', () => {
+  const packed = packUtterances([u(0, 0, 3000), u(0, 4000, 9000), u(0, 10000, 15000)], 28);
+  assert.deepEqual(packed, [u(0, 0, 15000)]);
+});
+
+test('a different speaker always starts a new pack', () => {
+  // Merging across speakers would attribute one person's words to the other,
+  // which matters more than any saving.
+  const packed = packUtterances([u(0, 0, 3000), u(1, 3500, 6000), u(0, 7000, 9000)], 28);
+  assert.equal(packed.length, 3);
+  assert.deepEqual(packed.map((p) => p.channel), [0, 1, 0]);
+});
+
+test('the window is a ceiling, not a suggestion', () => {
+  const packed = packUtterances([u(0, 0, 5000), u(0, 6000, 40000)], 28);
+  assert.equal(packed.length, 2, 'a 40s span must not be packed into one 28s window');
+});
+
+test('packing preserves total coverage and order', () => {
+  const input = [u(0, 0, 2000), u(0, 3000, 5000), u(1, 6000, 8000)];
+  const packed = packUtterances(input, 28);
+  assert.equal(packed.at(0)?.startMs, 0, 'the first moment of speech must survive');
+  assert.equal(packed.at(-1)?.endMs, 8000, 'the last moment of speech must survive');
+  const starts = packed.map((p) => p.startMs);
+  assert.deepEqual(starts, [...starts].sort((a, b) => a - b), 'packs must stay ordered');
+});
+
+test('packing does not mutate its input', () => {
+  const input = [u(0, 0, 2000), u(0, 2500, 4000)];
+  packUtterances(input, 28);
+  assert.deepEqual(input, [u(0, 0, 2000), u(0, 2500, 4000)]);
+});
+
+test('nothing in, nothing out', () => {
+  assert.deepEqual(packUtterances([], 28), []);
+});
+
+test('packing disabled leaves every turn intact', () => {
+  // The default. Accuracy beat throughput on the reference call, so 0 must
+  // mean "do nothing" rather than "pack with a zero-length window".
+  const input = [u(0, 0, 2000), u(0, 2500, 4000), u(1, 5000, 6000)];
+  assert.deepEqual(packUtterances(input, 0), input);
+});

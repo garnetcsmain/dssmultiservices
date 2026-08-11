@@ -249,6 +249,88 @@ export const config = {
     minScoreableSeconds: Number(process.env.WHISPER_MIN_SCOREABLE_SECONDS ?? 2.5),
 
     /**
+     * How an utterance's language gets decided.
+     *
+     *   'score' - transcribe once per candidate and grade the output text.
+     *             Three times the work, and the only thing that worked against
+     *             the base model, whose detector was confidently wrong.
+     *   'auto'  - one pass, trusting whisper's own detection. Two thirds
+     *             cheaper, and viable now that the model is large-v3-turbo.
+     *
+     * Throughput is the reason this is a knob: at 13x realtime a three-minute
+     * call is forty minutes of CPU, and this is the single largest lever on it.
+     */
+    languageStrategy: (process.env.WHISPER_LANGUAGE_STRATEGY ?? 'score') as 'score' | 'auto',
+    /** Below this detection probability, 'auto' defers rather than guessing. */
+    autoMinProbability: Number(process.env.WHISPER_AUTO_MIN_PROBABILITY ?? 0.6),
+
+    /**
+     * Group consecutive turns from one speaker into a single whisper call.
+     * 0 disables it, which is the default, and the reason is measured.
+     *
+     * The saving is real: whisper encodes a 30-second window whatever you hand
+     * it - ~14.4s of encode for a 5-second clip - so short utterances pay for
+     * time they never use. Packing the reference call at 28s took it from 616s
+     * to 347s, a 44% cut.
+     *
+     * It also cost accuracy, on the one turn that mattered. Unpacked, the agent
+     * side came back as "Ok. J'ai besoin de savoir c'est quoi le..." and
+     * "S-F-C". Packed, those merged into a single Spanish-scored blob that
+     * degenerated into "Se puede saber que se puede saber que se puede saber".
+     *
+     * Transcript accuracy is the priority here and a late summary is
+     * acceptable, so this stays off. Turn it on only if throughput starts to
+     * matter more than getting the words right.
+     */
+    packSeconds: Number(process.env.WHISPER_PACK_SECONDS ?? 0),
+
+    /**
+     * Threads per whisper invocation. Measured on maple's 12 cores against the
+     * reference call: 4 (the default) took 44.7s, 8 took 35.0s, and 12 took
+     * 41.6s - past 8 it contends with everything else on the box rather than
+     * going faster.
+     */
+    threads: Number(process.env.WHISPER_THREADS ?? 8),
+
+    /**
+     * Vocabulary hint fed to whisper as its initial prompt.
+     *
+     * The failure this addresses is real and was observed on the reference
+     * call: someone asked about the "Fonds des services de santé" and got back
+     * "fonds de salubrité santé". Domain terms, acronyms and Quebec street
+     * names are exactly what a general model has least reason to know, and
+     * exactly what a building-services company says all day.
+     *
+     * Split per language on purpose. A French glossary attached to the Spanish
+     * pass would bias that pass toward French, and the whole language decision
+     * downstream is made by comparing those passes - so a shared French prompt
+     * would quietly rig the comparison. Only the shared entry holds things that
+     * are language-neutral: names, acronyms, streets.
+     *
+     * Known risk, which is why it is measurable and switchable: an initial
+     * prompt can bleed into the transcript on unclear audio, with the model
+     * emitting glossary terms nobody said. Keep the list short and specific.
+     */
+    prompt: process.env.WHISPER_PROMPT
+      ?? 'DSS Multiservices, CNESST, RBQ, FSS, Revenu Quebec, Sherbrooke, Montreal, Laval, Longueuil.',
+    promptByLanguage: {
+      fr: process.env.WHISPER_PROMPT_FR
+        ?? 'Fonds des services de sante, salubrite, copropriete, syndicat de copropriete, '
+          + 'concierge, entretien menager, deneigement, gicleurs, chauffe-eau, sous-sol, degat d eau.',
+      en: process.env.WHISPER_PROMPT_EN
+        ?? 'Health services fund, sanitation, condo board, janitorial, snow removal, '
+          + 'sprinklers, water heater, basement, water damage.',
+      es: process.env.WHISPER_PROMPT_ES
+        ?? 'Fondo de servicios de salud, salubridad, condominio, conserje, limpieza, '
+          + 'retiro de nieve, rociadores, calentador de agua, sotano, dano por agua.',
+    } as Record<string, string>,
+
+    /** How many untranscribed recordings one backlog sweep will take on. */
+    sweepLimit: Number(process.env.WHISPER_SWEEP_LIMIT ?? 5),
+    /** Minutes between backlog sweeps. */
+    sweepIntervalMinutes: Number(process.env.WHISPER_SWEEP_INTERVAL_MINUTES ?? 30),
+
+    /**
      * Have Hermes summarise each transcript and pull out the follow-ups.
      *
      * A transcript is a record; a summary is what makes it usable. Costs one

@@ -66,6 +66,12 @@ export class GcsStore implements RecordingStore {
     }
   }
 
+  async list(prefix: string): Promise<string[]> {
+    const bucket = await this.bucketPromise;
+    const [files] = await bucket.getFiles({ prefix });
+    return files.map((f) => f.name);
+  }
+
   async listExpired(cutoff: Date): Promise<string[]> {
     const bucket = await this.bucketPromise;
     // Both prefixes: a retention promise that covers calls but silently
