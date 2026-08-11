@@ -268,6 +268,53 @@ language passes per utterance: turbo's own detector is far better than base's,
 so one pass with `-l auto` would cut the cost threefold. Untested — the
 measurement takes ten minutes per run.
 
+### Where the summary runs, and why it is not in the container
+
+**The container does telephony; the host does AI.** Webhooks, signatures, TwiML,
+whisper and the archive are containerised. Claude Code, Hermes and ollama all
+live on maple itself, and the summariser goes to them rather than the reverse.
+
+The immediate reason is practical: `claude` lives in `~/.local/bin` with
+credentials in `~/.claude`, and neither belongs inside an image. Baking them in
+would put account credentials in a container and grow the image to carry a
+second agent runtime.
+
+The structural reason is better. Moving the whole service to the host was the
+alternative considered, and rejected on measurement: maple runs **Node 18**
+while the service needs 20+, and `whisper-cli` exists only inside the image. It
+would mean upgrading the host's Node — shared with signal-cli, n8n, Hermes and
+ollama — and growing a build toolchain there, to gain access the host already
+has. The recordings directory is a bind mount; the audio, transcripts and
+summaries are already plain files under `~/dss-telephony/recordings`.
+
+So the seam is a **directory, not a protocol**. The service writes
+`RE….transcript.json`; a systemd user timer notices one with no matching
+`RE….summary.json` and fills it in. That makes it a queue for free: if Claude is
+down or a usage limit is spent, the next run picks up exactly what was missed.
+
+```
+scripts/summarise-host.mjs        zero dependencies, Node 18, runs on the host
+scripts/systemd/dss-summarise.*   timer, every 10 minutes, Persistent=true
+```
+
+The honest cost of this split is two places to look when something breaks, and
+two deploy paths. It is tolerable because the contract between them is "a file
+appeared".
+
+The in-service summariser is kept and `SUMMARISE_CALLS` defaults to off, so the
+same job can run either side without a code change — useful if Claude Code ever
+stops being available on the host.
+
+**Why not Hermes for this.** Hermes reports running `gpt-5.6-luna`, and its
+usage shares a weekly workspace limit with Codex and the other agents already
+running there. Summaries are stateless batch work that nobody is waiting on, so
+they are the easiest thing to move off a contended pool. The WhatsApp assistant
+stays on Hermes: that is where Esperancita's persona and each contact's memory
+live, and neither travels.
+
+Measured on the same reference call, Claude Code produced the better summary —
+it identified the call as a system test, which Hermes did not — in 13 seconds.
+
 ### Summaries
 
 A transcript is a record; a summary is what makes it usable. Hermes reads the
