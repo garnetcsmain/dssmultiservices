@@ -150,6 +150,47 @@ export async function transcribeWavFile(
 }
 
 /**
+ * One pass, letting whisper name the language itself.
+ *
+ * The scoring path below runs once per candidate, which is three times the
+ * work. That was the right trade against the base model, whose detector called
+ * a French clip English at p=0.93. large-v3-turbo is a different proposition,
+ * and on a real call it identified French at p=0.91 - so where the model is
+ * good enough, one pass buys back two thirds of the cost.
+ *
+ * Returns the detected language alongside the text; whisper.cpp prints it on
+ * stderr, which `run` folds into the same stream.
+ */
+export async function transcribeWavFileAuto(
+  wavPath: string,
+): Promise<{ text: string; language: string; probability: number } | null> {
+  if (!config.transcription.enabled) return null;
+  try {
+    const { stdout, stderr } = await runBoth(config.transcription.whisperPath, [
+      '-m', config.transcription.modelPath,
+      '-f', wavPath,
+      '-l', 'auto',
+      '-nt',
+    ]);
+
+    const detected = /auto-detected language:\s*([a-z]{2})\s*\(p\s*=\s*([\d.]+)\)/i.exec(stderr);
+    const text = stdout.trim();
+    if (!text) return null;
+    return {
+      text,
+      language: detected?.[1] ?? config.transcription.language,
+      probability: Number(detected?.[2] ?? 0),
+    };
+  } catch (err) {
+    console.error('[stt] auto-detect transcription failed', {
+      wavPath,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/**
  * Same, deciding the language by scoring the output text.
  *
  * `hint` skips the whole multi-pass exercise when the answer is already known -
@@ -207,7 +248,20 @@ export function extractVerificationCode(transcript: string, digits = 6): string 
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
 }
 
-function run(command: string, args: string[]): Promise<string> {
+async function run(command: string, args: string[]): Promise<string> {
+  return (await runBoth(command, args)).stdout;
+}
+
+/**
+ * Both streams, because whisper.cpp splits them: the transcript goes to
+ * stdout, while everything it reports about its own work - including the
+ * language it detected - goes to stderr. Reading only stdout, as this used to,
+ * makes auto-detection look like it silently always chose the fallback.
+ */
+function runBoth(
+  command: string,
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
@@ -216,7 +270,7 @@ function run(command: string, args: string[]): Promise<string> {
     child.stderr.on('data', (d) => (stderr += d));
     child.on('error', (err) => reject(new Error(`${command}: ${err.message}`)));
     child.on('close', (code) => {
-      if (code === 0) resolve(stdout);
+      if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(`${command} exited ${code}: ${stderr.slice(-300)}`));
     });
 

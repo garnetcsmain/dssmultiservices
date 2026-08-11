@@ -68,6 +68,33 @@ export class LocalStore implements RecordingStore {
     }
   }
 
+  async list(prefix: string): Promise<string[]> {
+    const rootAbs = path.resolve(this.root);
+    const keys: string[] = [];
+
+    const walk = async (dir: string): Promise<void> => {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+        throw err;
+      }
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(full);
+        } else if (!entry.name.endsWith('.meta.json') && !entry.name.endsWith('.partial')) {
+          const key = path.relative(rootAbs, full);
+          if (key.startsWith(prefix)) keys.push(key);
+        }
+      }
+    };
+
+    await walk(rootAbs);
+    return keys;
+  }
+
   async listExpired(cutoff: Date): Promise<string[]> {
     const rootAbs = path.resolve(this.root);
     const expired: string[] = [];

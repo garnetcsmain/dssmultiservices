@@ -5,6 +5,7 @@ import { createRoutes } from './routes/voice.js';
 import { createWhatsAppRoutes } from './routes/whatsapp.js';
 import { createMediaRoutes } from './routes/media.js';
 import { sweepRetention } from './pipeline/archive.js';
+import { sweepTranscripts } from './pipeline/transcript.js';
 import { hermesHealth } from './hermes.js';
 
 const store = await createStore();
@@ -79,6 +80,17 @@ const sweepTimer = setInterval(() => {
   sweepRetention(store).catch((err) => console.error('[retention] sweep failed', err));
 }, DAY_MS);
 sweepTimer.unref();
+
+// Transcription is fired detached from the webhook, so a restart or a whisper
+// failure mid-run leaves a recording archived and silently untranscribed. This
+// finds those: a .wav with no .transcript.json beside it is the backlog.
+const transcriptTimer = setInterval(
+  () => {
+    sweepTranscripts(store).catch((err) => console.error('[transcript] sweep failed', err));
+  },
+  config.transcription.sweepIntervalMinutes * 60_000,
+);
+transcriptTimer.unref();
 
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {

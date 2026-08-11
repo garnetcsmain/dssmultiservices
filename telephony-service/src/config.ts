@@ -249,6 +249,27 @@ export const config = {
     minScoreableSeconds: Number(process.env.WHISPER_MIN_SCOREABLE_SECONDS ?? 2.5),
 
     /**
+     * How an utterance's language gets decided.
+     *
+     *   'score' - transcribe once per candidate and grade the output text.
+     *             Three times the work, and the only thing that worked against
+     *             the base model, whose detector was confidently wrong.
+     *   'auto'  - one pass, trusting whisper's own detection. Two thirds
+     *             cheaper, and viable now that the model is large-v3-turbo.
+     *
+     * Throughput is the reason this is a knob: at 13x realtime a three-minute
+     * call is forty minutes of CPU, and this is the single largest lever on it.
+     */
+    languageStrategy: (process.env.WHISPER_LANGUAGE_STRATEGY ?? 'score') as 'score' | 'auto',
+    /** Below this detection probability, 'auto' defers rather than guessing. */
+    autoMinProbability: Number(process.env.WHISPER_AUTO_MIN_PROBABILITY ?? 0.6),
+
+    /** How many untranscribed recordings one backlog sweep will take on. */
+    sweepLimit: Number(process.env.WHISPER_SWEEP_LIMIT ?? 5),
+    /** Minutes between backlog sweeps. */
+    sweepIntervalMinutes: Number(process.env.WHISPER_SWEEP_INTERVAL_MINUTES ?? 30),
+
+    /**
      * Have Hermes summarise each transcript and pull out the follow-ups.
      *
      * A transcript is a record; a summary is what makes it usable. Costs one

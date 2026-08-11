@@ -28,6 +28,14 @@ export interface RecordingStore {
   get(key: string): Promise<Buffer | null>;
   /** Keys whose stored timestamp is older than the cutoff. */
   listExpired(cutoff: Date): Promise<string[]>;
+  /**
+   * Every key under a prefix.
+   *
+   * Used to find recordings that never got a transcript. Deriving the work
+   * list from what is actually in the store, rather than from a queue, means a
+   * crash mid-transcription costs a retry instead of a lost transcript.
+   */
+  list(prefix: string): Promise<string[]>;
   remove(key: string): Promise<void>;
 }
 
@@ -57,15 +65,23 @@ export function recordingKey(recordingSid: string, startedAt: Date): string {
  * finds one finds the other, and a date prefix is what makes "everything from
  * last Tuesday" answerable without an index.
  */
+/**
+ * Strips whichever sibling suffix a key already carries.
+ *
+ * Makes the derivations idempotent. The backlog sweeps compare derived keys
+ * against what is on disk, so a derivation that appended a second suffix when
+ * handed an already-derived key would make every recording look untranscribed
+ * and re-run the whole archive on every pass.
+ */
+function baseKey(key: string): string {
+  return key.replace(/\.(wav|transcript\.json|summary\.json)$/, '');
+}
+
 export function transcriptKey(recordingKeyOrSid: string): string {
-  return recordingKeyOrSid.endsWith('.wav')
-    ? recordingKeyOrSid.replace(/\.wav$/, '.transcript.json')
-    : `${recordingKeyOrSid}.transcript.json`;
+  return `${baseKey(recordingKeyOrSid)}.transcript.json`;
 }
 
 /** Summary key. Same prefix as the audio and the transcript, for the same reason. */
 export function summaryKey(recordingKeyOrSid: string): string {
-  return recordingKeyOrSid.endsWith('.wav')
-    ? recordingKeyOrSid.replace(/\.wav$/, '.summary.json')
-    : `${recordingKeyOrSid}.summary.json`;
+  return `${baseKey(recordingKeyOrSid)}.summary.json`;
 }
