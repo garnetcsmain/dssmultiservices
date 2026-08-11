@@ -19,6 +19,27 @@ import { pickBestTranscript, type Candidate } from './language.js';
  */
 
 /**
+ * Vocabulary hint for one pass.
+ *
+ * The shared list is language-neutral - names, acronyms, streets - and the
+ * per-language part carries the trade vocabulary. They are kept apart because
+ * every candidate pass is compared against the others to decide the language:
+ * attaching French terms to the Spanish pass would bias that pass toward
+ * French and quietly rig the comparison it feeds.
+ *
+ * Pass no language (the auto path) and only the neutral half applies.
+ */
+function promptFor(language?: string): string[] {
+  const parts = [config.transcription.prompt];
+  if (language) {
+    const specific = config.transcription.promptByLanguage[language];
+    if (specific) parts.push(specific);
+  }
+  const prompt = parts.filter(Boolean).join(' ').trim();
+  return prompt ? ['--prompt', prompt] : [];
+}
+
+/**
  * Transcribes any audio ffmpeg can decode, in one known language.
  *
  * Call recordings arrive as 8 kHz WAV; WhatsApp voice notes arrive as OGG
@@ -61,6 +82,7 @@ export async function transcribeAudio(
       '-l', language,
       '-nt',
       '-t', String(config.transcription.threads),
+      ...promptFor(language),
     ]);
 
     const text = output.trim();
@@ -139,6 +161,7 @@ export async function transcribeWavFile(
       '-l', language,
       '-nt',
       '-t', String(config.transcription.threads),
+      ...promptFor(language),
     ]);
     const text = output.trim();
     return text.length > 0 ? text : null;
@@ -174,6 +197,7 @@ export async function transcribeWavFileAuto(
       '-l', 'auto',
       '-nt',
       '-t', String(config.transcription.threads),
+      ...promptFor(),
     ]);
 
     const detected = /auto-detected language:\s*([a-z]{2})\s*\(p\s*=\s*([\d.]+)\)/i.exec(stderr);

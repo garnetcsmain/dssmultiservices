@@ -292,6 +292,39 @@ export const config = {
      */
     threads: Number(process.env.WHISPER_THREADS ?? 8),
 
+    /**
+     * Vocabulary hint fed to whisper as its initial prompt.
+     *
+     * The failure this addresses is real and was observed on the reference
+     * call: someone asked about the "Fonds des services de santé" and got back
+     * "fonds de salubrité santé". Domain terms, acronyms and Quebec street
+     * names are exactly what a general model has least reason to know, and
+     * exactly what a building-services company says all day.
+     *
+     * Split per language on purpose. A French glossary attached to the Spanish
+     * pass would bias that pass toward French, and the whole language decision
+     * downstream is made by comparing those passes - so a shared French prompt
+     * would quietly rig the comparison. Only the shared entry holds things that
+     * are language-neutral: names, acronyms, streets.
+     *
+     * Known risk, which is why it is measurable and switchable: an initial
+     * prompt can bleed into the transcript on unclear audio, with the model
+     * emitting glossary terms nobody said. Keep the list short and specific.
+     */
+    prompt: process.env.WHISPER_PROMPT
+      ?? 'DSS Multiservices, CNESST, RBQ, FSS, Revenu Quebec, Sherbrooke, Montreal, Laval, Longueuil.',
+    promptByLanguage: {
+      fr: process.env.WHISPER_PROMPT_FR
+        ?? 'Fonds des services de sante, salubrite, copropriete, syndicat de copropriete, '
+          + 'concierge, entretien menager, deneigement, gicleurs, chauffe-eau, sous-sol, degat d eau.',
+      en: process.env.WHISPER_PROMPT_EN
+        ?? 'Health services fund, sanitation, condo board, janitorial, snow removal, '
+          + 'sprinklers, water heater, basement, water damage.',
+      es: process.env.WHISPER_PROMPT_ES
+        ?? 'Fondo de servicios de salud, salubridad, condominio, conserje, limpieza, '
+          + 'retiro de nieve, rociadores, calentador de agua, sotano, dano por agua.',
+    } as Record<string, string>,
+
     /** How many untranscribed recordings one backlog sweep will take on. */
     sweepLimit: Number(process.env.WHISPER_SWEEP_LIMIT ?? 5),
     /** Minutes between backlog sweeps. */
