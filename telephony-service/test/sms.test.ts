@@ -59,3 +59,26 @@ test('every line in the directory can receive a text', () => {
     assert.ok(smsRecipients(entry).length > 0, `${number} would drop texts silently`);
   }
 });
+
+/**
+ * Relay versus notify. This is a safety property: on a notify line a staff
+ * message must never be forwarded, because there is no conversation to forward
+ * it into and the last customer to write in would receive it.
+ */
+import { smsMode } from '../src/directory.js';
+
+test('the main line is notify-only', () => {
+  const main = lookupByNumber('+14502358434')!;
+  assert.equal(smsMode(main), 'notify');
+});
+
+test("Francisca's line is a real two-way relay", () => {
+  const line = lookupByNumber('+14385006595')!;
+  assert.equal(smsMode(line), 'relay');
+});
+
+test('a line that forgets to declare a mode does not relay', () => {
+  // The safe default matters more than the convenient one: an entry added in a
+  // hurry must not start relaying staff messages to strangers.
+  assert.equal(smsMode({ employeeId: 'x', name: 'x', forwardTo: '+15551234567', whatsappEnabled: false }), 'notify');
+});

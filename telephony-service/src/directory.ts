@@ -21,6 +21,24 @@ export interface DirectoryEntry {
    * from the DSS number.
    */
   smsForwardTo?: string[];
+  /**
+   * What texting this line means.
+   *
+   *   'relay'  - a real two-way line. Inbound reaches staff, and a staff reply
+   *              goes back out to the customer from the DSS number.
+   *   'notify' - a one-way copy. Inbound is forwarded and nothing is ever sent
+   *              outward, so a message from staff to this line goes nowhere.
+   *
+   * The distinction is a safety property, not a preference. On a notify line
+   * the traffic is things like verification codes, and the people receiving
+   * them are not conducting a conversation - so if one of them texts the line
+   * for any reason, relaying it would send an internal message to whichever
+   * customer happened to write in last.
+   *
+   * Defaults to 'notify': a line that quietly forwards too little is a nuisance,
+   * one that quietly forwards too much is a disclosure.
+   */
+  smsMode?: 'relay' | 'notify';
   /** True once this number is registered to the Vonage WABA. */
   whatsappEnabled: boolean;
 }
@@ -29,6 +47,11 @@ export interface DirectoryEntry {
 export function smsRecipients(entry: DirectoryEntry): string[] {
   const list = entry.smsForwardTo?.length ? entry.smsForwardTo : [entry.forwardTo];
   return list.filter(Boolean);
+}
+
+/** Whether staff replies on this line reach the customer, or go nowhere. */
+export function smsMode(entry: DirectoryEntry): 'relay' | 'notify' {
+  return entry.smsMode ?? 'notify';
 }
 
 /**
@@ -51,16 +74,22 @@ const DIRECTORY: Record<string, DirectoryEntry> = {
     // the caller hears the notice, but the person answering is being recorded
     // too and should know it.
     forwardTo: '+15144637712',
-    // Texts to the main line reach David and Freddy both. A voicemail alert
-    // that only one person sees is a voicemail nobody answers when that person
-    // is on a roof.
+    // Texts to the main line reach David and Freddy both. The traffic here is
+    // verification codes and alerts rather than conversation - two people see
+    // a 2FA code arrive, and neither has to be at their desk.
     smsForwardTo: ['+15144637712', '+17276136004'],
+    // Explicitly one-way. Nobody answers customers on this line, so a text
+    // from David or Freddy to it must not be relayed to whoever wrote in last.
+    smsMode: 'notify',
     whatsappEnabled: true, // registered to the WABA and linked 2026-08-09
   },
   '+14385006595': {
     employeeId: 'emp_002',
     name: 'Francisca Rojas',
     forwardTo: '+14387287236',
+    // A real two-way line: she answers customers from her own phone and they
+    // only ever see the DSS number.
+    smsMode: 'relay',
     // Not registered yet. Meta sends the verification code from a short code,
     // which Twilio long numbers cannot receive at all, so this has to go
     // through voice verification on /webhooks/twilio/otp - the same path the

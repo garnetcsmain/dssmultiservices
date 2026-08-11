@@ -1,27 +1,33 @@
 import { Router } from 'express';
 import { config } from '../config.js';
 import { validateTwilioSignature, sendSms, sendMms } from '../twilio.js';
-import { lookupByNumber, smsRecipients } from '../directory.js';
+import { lookupByNumber, smsRecipients, smsMode } from '../directory.js';
 import { rememberThread, recallThread, type RecordingStore } from '../threads.js';
 
 /**
- * Two-way SMS and MMS relay.
+ * SMS and MMS forwarding, in one or two directions depending on the line.
  *
- * A DSS number has to work like a phone number, not like a one-way inbox: a
- * customer texts the business line, the employee answers from their own phone,
- * and the customer sees the business number throughout. Neither side ever
- * learns the other's real number.
+ * A **relay** line works like a phone number: a customer texts the business
+ * line, the employee answers from their own phone, and the customer sees the
+ * business number throughout. Neither side learns the other's real number.
  *
- * The hard part is the return path. A reply arrives from the employee's mobile
- * addressed to the DSS number, and nothing in that message says who it is
- * for - so the last customer to text each DSS number is remembered, and a
- * reply goes there. That is the same convention a shared inbox has, and it has
- * the same failure: two customers texting the same line within moments of each
- * other means the second one owns the thread. The employee sees who they are
- * answering on every forwarded message, which is what makes that recoverable.
+ * The hard part there is the return path. A reply arrives from the employee's
+ * mobile addressed to the DSS number, and nothing in it says who it answers -
+ * so the last customer to text that line is remembered, and the reply goes
+ * there. Same convention as a shared inbox, same failure: two customers within
+ * moments of each other and the second owns the thread. Every forwarded
+ * message carries the sender's number, which is what makes that recoverable.
  *
- * Message bodies are deliberately never logged. They are customer content, and
- * a log is the easiest place for that to leak.
+ * A **notify** line only fans inbound out. The main line is one of these: the
+ * traffic is verification codes and alerts, two people want to see them, and
+ * nobody conducts a conversation there. Relaying a staff message on such a
+ * line would send something internal to whichever customer wrote in last, so
+ * it is dropped and logged instead. That is why 'notify' is the default -
+ * forwarding too little is a nuisance, forwarding too much is a disclosure.
+ *
+ * Message bodies are deliberately never logged. They are customer content -
+ * and on the main line they are verification codes - so a log line is the
+ * easiest place for them to leak.
  */
 export function createSmsRoutes(store: RecordingStore): Router {
   const router = Router();
@@ -45,12 +51,21 @@ export function createSmsRoutes(store: RecordingStore): Router {
 
     const media = collectMedia(body);
     const replier = matchRecipient(from, recipients);
+    const mode = smsMode(entry!);
 
     try {
-      if (replier) {
+      if (replier && mode === 'notify') {
+        // A one-way line. Staff do not hold conversations here, so relaying
+        // this would send an internal message to whichever customer wrote in
+        // last - and neither of them would ever know.
+        console.log('[sms] ignoring staff message on a notify-only line', {
+          dssNumber,
+          from: replier,
+        });
+      } else if (replier) {
         await handleStaffReply(store, dssNumber, replier, text, media);
       } else {
-        await forwardToStaff(store, dssNumber, recipients, from, text, media);
+        await forwardToStaff(store, dssNumber, recipients, from, text, media, mode);
       }
     } catch (err) {
       console.error('[sms] relay failed', {
@@ -137,6 +152,7 @@ async function forwardToStaff(
   customer: string,
   text: string,
   media: string[],
+  mode: 'relay' | 'notify',
 ): Promise<void> {
   // Who it came from goes in the message, not just in our records: whoever
   // answers needs it, and it is the only repair when two conversations overlap
@@ -145,9 +161,14 @@ async function forwardToStaff(
   if (media.length > 0 && !text.trim()) parts.push(`(${media.length} fichier(s))`);
   const forwarded = parts.join('\n');
 
-  // The thread is recorded before delivery. If one recipient's carrier is
-  // slow, a reply from a faster one must still find the customer.
-  await rememberThread(store, dssNumber, customer);
+  // Only a two-way line needs to remember who it is talking to. On a notify
+  // line nothing is ever sent back, so keeping customer numbers around would
+  // be storing something we have no use for.
+  if (mode === 'relay') {
+    // Recorded before delivery: if one recipient's carrier is slow, a reply
+    // from a faster one must still find the customer.
+    await rememberThread(store, dssNumber, customer);
+  }
 
   // Sequential and individually guarded: one unreachable phone must not stop
   // the message reaching the others.
