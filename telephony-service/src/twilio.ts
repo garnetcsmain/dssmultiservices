@@ -81,11 +81,44 @@ export async function deleteTwilioRecording(recordingSid: string): Promise<void>
  * outside the 24-hour customer window needs an approved template, and nobody
  * has one. SMS costs about a cent and just works.
  */
-export async function sendSms(to: string, body: string): Promise<string> {
+export async function sendSms(
+  to: string,
+  body: string,
+  from = config.voice.smsFrom,
+  statusCallback?: string,
+): Promise<string> {
   const message = await twilioClient.messages.create({
     to,
-    from: config.voice.smsFrom,
+    from,
     body,
+    ...(statusCallback ? { statusCallback } : {}),
+  });
+  return message.sid;
+}
+
+/**
+ * Sends media.
+ *
+ * `mediaUrl` takes Twilio's own inbound URLs directly rather than downloading
+ * and re-hosting them: they are fetchable without our credentials, so relaying
+ * a customer's photo to an employee costs one API call and no bandwidth.
+ *
+ * The body is optional on MMS, but sending one is what carries "who is this
+ * from" alongside the picture.
+ */
+export async function sendMms(
+  to: string,
+  from: string,
+  body: string,
+  mediaUrl: string[],
+  statusCallback?: string,
+): Promise<string> {
+  const message = await twilioClient.messages.create({
+    to,
+    from,
+    ...(body.trim() ? { body } : {}),
+    mediaUrl,
+    ...(statusCallback ? { statusCallback } : {}),
   });
   return message.sid;
 }

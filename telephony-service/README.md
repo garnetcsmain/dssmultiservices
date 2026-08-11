@@ -165,6 +165,41 @@ for `fsulbaran` on maple). Check it before trusting a deploy:
 docker exec dss-telephony sh -c 'touch /app/recordings/.probe && rm /app/recordings/.probe && echo writable'
 ```
 
+## The fallback, for when maple is down
+
+maple is a single point of failure for the whole business line. A copy of the
+bare routing lives on Twilio's own infrastructure and answers only when the
+primary handler fails hard — connection refused, TLS failure, read timeout, or
+a 5xx. Calls still connect and texts still reach staff; nothing is recorded,
+transcribed or relayed back. See the architecture doc for the full table of
+what degrades.
+
+Deployed 2026-08-10 to `dss-telephony-fallback-1868-prod.twil.io`, wired as the
+fallback on both directory numbers. The functions are `protected`, so Twilio's
+runtime rejects anything without a valid signature — verified at 403. Public
+visibility would have left an open endpoint able to send MMS to David and Freddy
+on our bill.
+
+Deploy it, or redeploy after **any** edit to `src/directory.ts`:
+
+```bash
+npm run build && node --env-file=.env scripts/deploy-fallback.mjs
+```
+
+The routing table is generated from the directory, so the redeploy is what
+keeps the two in step. Skipping it leaves a new number covered on a normal day
+and uncovered during an outage — the one day anyone would find out.
+
+Preview the table without touching anything:
+
+```bash
+node --env-file=.env scripts/deploy-fallback.mjs --dry-run
+```
+
+The script is idempotent, verifies the deployed endpoints by signing a request
+the way Twilio does, and never touches the primary handlers. `--skip-numbers`
+deploys the functions without rewiring the numbers.
+
 ## Tests
 
 ```bash
@@ -172,9 +207,15 @@ npm test
 ```
 
 Covers the logic that has no provider on the other end: directive parsing,
-media URL signing and path escape, IVR language routing, and inbound message
-classification. Compiled first rather than type-stripped, because Node's
-stripper does not rewrite the `.js` specifiers NodeNext requires.
+media URL signing and path escape, IVR language routing, inbound message
+classification, SMS relay direction, and the Twilio fallback. Compiled first
+rather than type-stripped, because Node's stripper does not rewrite the `.js`
+specifiers NodeNext requires.
+
+The fallback tests are the unusual ones: they render the deployed source, run
+it against the real TwiML classes, and assert on the XML. That code executes
+only when the main service is already down, so a defect in it would surface at
+the worst possible moment and leave no logs behind.
 
 Nothing here talks to Twilio, Vonage or Hermes — those paths are still verified
 by hand against live services, which is the honest state of this repo.
@@ -696,6 +737,16 @@ Sandbox does not sign its webhooks, so it needs
 - **The line can go dark without the service noticing.** Reachability depends on
   Tailscale's control plane and a DERP relay; when they dropped for 30 minutes
   on 2026-08-10 the container logs stayed clean throughout. No alerting exists.
+  The Twilio fallback now covers exactly this failure — an unreachable Funnel is
+  a connection error, which is what Twilio needs to see to divert — so that
+  outage would have kept calls connecting and texts flowing, tagged `[SECOURS]`.
+  It does not cover maple answering `200` while broken, and it is still not
+  monitoring.
+- **The fallback has never been exercised by a real outage.** It is deployed and
+  wired, and its endpoints were verified with signed requests — but nothing has
+  yet arrived at them from Twilio itself. The honest test is stopping the
+  container on maple and texting the 450: the message should arrive tagged
+  `[SECOURS]`. Reversible with `docker compose up -d`.
 - **Hermes prompt tokens are unmeasured and could dominate.** ~33k per message
   at last look, on no telephony invoice. Every reply logs `promptTokens`.
 - **Toll-free verification.** The requirement was truncated in the brief. Twilio's
