@@ -593,6 +593,68 @@ Hermes' gateway speaks WhatsApp natively, but only via Baileys or Meta Cloud
 API, never Vonage. Keeping Vonage as BSP is exactly why the bridge in
 `src/hermes.ts` has to exist.
 
+The one place provider tooling *is* used is the fallback below — because there
+the requirement is precisely "work when our own infrastructure does not", and
+nothing we host can satisfy that.
+
+## Failure domain: what happens when maple dies
+
+Everything above runs on one machine behind one Tailscale Funnel. Until this
+was added, that machine was a single point of failure for the whole business
+line: no calls, no texts, no notification of either. A customer heard a failed
+call and David's phone stayed silent.
+
+Twilio Functions now host a much smaller copy of the routing, registered as the
+numbers' `SmsFallbackUrl` and `VoiceFallbackUrl`. Twilio requests those only
+when the primary handler fails outright — TCP refused, TLS failure, read
+timeout (5 s connect / 15 s read by default), or a 5xx. That is the shape of
+maple being down, the container being down, or the Funnel being down.
+
+```
+call/text ──▶ Twilio ──▶ maple (primary)          full: record, archive,
+                  │                                transcribe, summarise, relay
+                  └──▶ twil.io fallback           connect and forward, nothing else
+                       (only on hard failure)
+```
+
+Source in `src/fallback/`, deployed by `scripts/deploy-fallback.mjs`. The
+routing table is **generated from `src/directory.ts`** rather than written by
+hand: a number added to the directory and not redeployed here would be covered
+every normal day and uncovered on the one day it matters. `test/fallback.test.ts`
+renders the real source, executes it against the real TwiML classes, and asserts
+on the XML — because this code produces no logs we can read and only runs when
+nobody is watching.
+
+What it deliberately does **not** do:
+
+| | Normal | Fallback |
+|---|---|---|
+| Call connects | yes | yes |
+| Call recorded, archived, transcribed, summarised | yes | **no** |
+| Unanswered call | our voicemail, archived | employee's carrier mailbox |
+| Customer text reaches staff | yes | yes, tagged `[SECOURS]` |
+| Staff reply reaches the customer | yes (relay lines) | **no** — refused to their face |
+| WhatsApp | yes | **no** — Vonage points at maple only |
+
+Not recording is a decision, not an omission: the archive is on maple, so audio
+captured here would sit on Twilio past the retention window, taken without the
+notice the caller normally hears. A connected call that is not recorded is
+degraded service; a recording we cannot account for is a compliance problem.
+
+Two gaps worth stating plainly:
+
+- **A 200 is not health.** If maple answers but behaves badly — container up
+  with whisper wedged, Funnel up proxying to a dead upstream — the fallback
+  never fires. It covers hard failures only.
+- **Relay lines go one-way.** There is no thread memory on Twilio, so during an
+  outage a customer reaches Francisca but her reply cannot be routed back. She
+  is told so rather than having it vanish. The notify line has no such gap,
+  which is fortunate, since that is the one carrying 2FA codes.
+
+The `[SECOURS]` tag on forwarded messages is the outage alarm. Without it a
+maple outage looks identical to a normal day from a phone — texts keep
+arriving, while recordings, transcripts and summaries silently stop.
+
 ## Cost model
 
 | Line item | Basis | Monthly at ~15k min |

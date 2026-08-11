@@ -110,6 +110,17 @@ export function allEntries(): DirectoryEntry[] {
   return Object.values(DIRECTORY);
 }
 
+/**
+ * Every line with the number it is reached on.
+ *
+ * `allEntries` drops the key, which is fine for anything that already knows
+ * which number it is handling. The Twilio fallback does not - it has to build
+ * a routing table from scratch - so it needs both halves.
+ */
+export function allLines(): Array<{ number: string; entry: DirectoryEntry }> {
+  return Object.entries(DIRECTORY).map(([number, entry]) => ({ number, entry }));
+}
+
 /** Twilio is consistent about E.164, but inbound config edits are not. */
 function normalize(raw: string): string {
   const trimmed = raw.trim();
