@@ -761,18 +761,38 @@ contact's 24-hour window needs an approved template, and none exists.
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
 - Three stale recordings on Twilio, including a consumed OTP
-- No real inbound call has ever run: voicemail, archive and the SMS
-  notification are untested against an actual caller
 - The line's reachability depends on Tailscale's control plane and a DERP
   relay, with no alerting when either drops
-- Employee-side language (mostly Spanish) is inert until dual-channel
-  recordings are transcribed per channel instead of downmixed
 - Hermes prompt tokens (~33k/message) remain unmeasured and appear on no
   telephony invoice
-- The IVR is verified against the running service but has never carried a real
-  call; ring timing under Rogers still needs re-measuring with the menu on
+- The IVR has never carried a real call and is currently `off`; ring timing
+  under Rogers still needs re-measuring with the menu on
+
+**A rejected call lands in the employee's personal voicemail.** Observed on
+2026-08-10: the call rang out to David's Rogers voicemail, and the greeting —
+"À la tonalité, veuillez enregistrer votre message" — was archived, transcribed
+and summarised as though it were a customer conversation, logged as
+`outcome: completed`. The carrier answers, so from Twilio's side the call
+succeeded. Screening the leg (`<Number url="…">` with a Gather, so a voicemail
+system cannot press a key) is the fix on the table; not implemented, and the
+call is not ours to make alone since it changes how staff answer.
+
+**Two whisper failures the vocabulary gate does not reach**, both above the
+duration floor and so both still live: "J'ai besoin" degraded to "Je besoin",
+and a 3.5s utterance replaced with subtitle boilerplate from training data,
+"Sous-titrage Société Radio-Canada". No prompt setting fixes the second.
+
+**Recordings archived before `from`/`to` were persisted cannot recover them.**
+The sweep now hydrates everything the sidecar holds, but a sidecar written
+earlier simply does not have those fields. Affects the two calls of
+2026-08-10.
 - Outbound media has never been sent to a real handset — every message type is
   built to Vonage's published shape, none is confirmed against a device
+- Our own voicemail and its SMS notification are still untested against a real
+  caller. Two real calls have now run end to end — archived, transcribed and
+  summarised — but both reached a human or the employee's carrier, so neither
+  exercised this path.
 - `npm test` covers the pure logic (directive parsing, media signing and path
-  escape, IVR routing, inbound classification). Everything touching a provider
-  is still verified by hand.
+  escape, IVR routing, inbound classification, utterance segmentation, language
+  scoring, summary section parsing, archive key derivation and sidecar
+  metadata). Everything touching a provider is still verified by hand.
