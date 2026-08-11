@@ -12,8 +12,23 @@ export interface DirectoryEntry {
   name: string;
   /** E.164 destination the DSS number bridges to (mobile, softphone, SIP). */
   forwardTo: string;
+  /**
+   * Who receives texts sent to this number. Defaults to just `forwardTo`.
+   *
+   * Separate from voice because the two fan out differently: a call can only
+   * ring one place usefully, while a text can sit in several pockets at once.
+   * Anyone listed here can also reply, and their reply goes to the customer
+   * from the DSS number.
+   */
+  smsForwardTo?: string[];
   /** True once this number is registered to the Vonage WABA. */
   whatsappEnabled: boolean;
+}
+
+/** Who gets texts for a line. The single voice destination, unless told otherwise. */
+export function smsRecipients(entry: DirectoryEntry): string[] {
+  const list = entry.smsForwardTo?.length ? entry.smsForwardTo : [entry.forwardTo];
+  return list.filter(Boolean);
 }
 
 /**
@@ -36,7 +51,21 @@ const DIRECTORY: Record<string, DirectoryEntry> = {
     // the caller hears the notice, but the person answering is being recorded
     // too and should know it.
     forwardTo: '+15144637712',
+    // Texts to the main line reach David and Freddy both. A voicemail alert
+    // that only one person sees is a voicemail nobody answers when that person
+    // is on a roof.
+    smsForwardTo: ['+15144637712', '+17276136004'],
     whatsappEnabled: true, // registered to the WABA and linked 2026-08-09
+  },
+  '+14385006595': {
+    employeeId: 'emp_002',
+    name: 'Francisca Rojas',
+    forwardTo: '+14387287236',
+    // Not registered yet. Meta sends the verification code from a short code,
+    // which Twilio long numbers cannot receive at all, so this has to go
+    // through voice verification on /webhooks/twilio/otp - the same path the
+    // 450 used. Purchased 2026-08-10, Pointe-Claire, voice + SMS + MMS.
+    whatsappEnabled: false,
   },
 };
 

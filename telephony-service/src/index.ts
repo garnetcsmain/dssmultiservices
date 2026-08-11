@@ -2,6 +2,7 @@ import express from 'express';
 import { config, whatsappConfigured, mediaHostingEnabled } from './config.js';
 import { createStore } from './storage/index.js';
 import { createRoutes } from './routes/voice.js';
+import { createSmsRoutes } from './routes/sms.js';
 import { createWhatsAppRoutes } from './routes/whatsapp.js';
 import { createMediaRoutes } from './routes/media.js';
 import { sweepRetention } from './pipeline/archive.js';
@@ -20,6 +21,7 @@ app.disable('x-powered-by');
 app.use('/webhooks/twilio', express.urlencoded({ extended: false }));
 
 app.use(createRoutes(store));
+app.use(createSmsRoutes(store));
 
 // Mounted only when Vonage credentials are present, so a voice-only
 // deployment does not expose message endpoints that cannot work.
