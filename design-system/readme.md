@@ -20,3 +20,7 @@ Marca oficial de DSS Multiservices: logotipo, paleta, tipografía y componentes 
 
 ## Assets
 Logos en `../brand/`: color, reversa (blanco), marca/ícono — PNG + SVG.
+
+## Personaje corporativo
+Ficha canónica de la vocera realista (prompt maestro, vestuario de marca, variantes
+de escena y flujo Higgsfield Elements): [`personaje-corporativo.md`](personaje-corporativo.md).
