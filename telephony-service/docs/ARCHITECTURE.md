@@ -342,6 +342,40 @@ The risk to watch is bleed: an initial prompt can push a model into emitting
 glossary terms nobody said, especially on unclear audio. Keep the list short,
 and check a transcript after changing it.
 
+**Measured, on the reference call.** Same audio, same model, the hint the only
+variable, with the no-hint arm reproducing the archived transcript exactly — so
+the difference is the hint and nothing else.
+
+| utterance | without | with |
+|---|---|---|
+| 10.0s | les fonds **de salubrité** santé … **le service** de santé | les fonds **des** salubrités de santé … **les services** de santé |
+| 7.9s | *(scored as Spanish)* toda la conversación **como le faut** | *(scored as French)* toute la conversation comme il faut |
+| 2.1s | Merci. | Ayo. |
+| 1.2s | Ok, ya, tranquille. | Ok, ja, trenquemos. |
+
+No bleed: the only glossary word gained anywhere was "services", in the one
+place the term was actually spoken. Cost, 7s on a 466s run.
+
+But the hint is not free on short audio, and the mechanism is not mysterious:
+on a 1.2s clip the prompt is most of the context the model has, so it stops
+being a hint and becomes the evidence. So it is spent only where there is
+enough audio to argue with it — `WHISPER_PROMPT_MIN_SECONDS`, default 2.5s,
+the same threshold already used to decide an utterance is too short to score.
+
+A third run confirmed the gate does exactly that and nothing else: of 16
+utterances, the 10 below the floor came back identical to the no-hint arm and
+the 6 above it identical to the hinted arm, with **none landing in a third
+state**. Language inheritance was the thing to worry about there — short
+utterances inherit from long ones — and it did not leak.
+
+Two caveats worth keeping. This rests on **one 46-second call**, so it is a
+mechanism supported by an example rather than a result. And the gate is not a
+pure win above the floor: it keeps two regressions it cannot see, "J'ai besoin"
+degraded to "Je besoin", and a 3.5s utterance replaced by subtitle boilerplate
+from whisper's training data — "Sous-titrage Société Radio-Canada". That last
+one is a known whisper failure on unclear audio and has nothing to do with the
+glossary; no prompt setting fixes it.
+
 ### Where the summary runs, and why it is not in the container
 
 **The container does telephony; the host does AI.** Webhooks, signatures, TwiML,

@@ -108,8 +108,9 @@ async function transcribeAuto(
   clip: string,
   fallback: string,
   inherited?: string,
+  seconds?: number,
 ): Promise<{ text: string; language: string; confident: boolean } | null> {
-  const result = await transcribeWavFileAuto(clip);
+  const result = await transcribeWavFileAuto(clip, seconds);
   if (!result?.text) return null;
 
   const confident = result.probability >= config.transcription.autoMinProbability;
@@ -186,8 +187,8 @@ export async function transcribeRecording(
 
       const result =
         config.transcription.languageStrategy === 'auto'
-          ? await transcribeAuto(clip, fallback, inherited)
-          : await transcribeWavFileMultilingual(clip, candidates, fallback, inherited);
+          ? await transcribeAuto(clip, fallback, inherited, seconds)
+          : await transcribeWavFileMultilingual(clip, candidates, fallback, inherited, seconds);
 
       await rm(clip, { force: true }).catch(() => {});
       if (!result?.text) continue;

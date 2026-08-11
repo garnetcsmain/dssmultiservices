@@ -325,6 +325,27 @@ export const config = {
           + 'retiro de nieve, rociadores, calentador de agua, sotano, dano por agua.',
     } as Record<string, string>,
 
+    /**
+     * Shortest utterance the vocabulary hint is allowed near.
+     *
+     * Measured A/B on the reference call, same audio, same model, the hint the
+     * only variable. On the substantial utterances it helped: "le service de
+     * santé" became "les services de santé" and "les fonds de" became "les
+     * fonds des", moving toward the "Fonds des services de santé" that was
+     * actually being asked about; a French sentence that had been coming back
+     * as Spanish with French leaking through came back as French.
+     *
+     * On one-second filler it did damage: "Merci" became "Ayo", "Ok, ya,
+     * tranquille" became "Ok, ja, trenquemos". The mechanism is not mysterious.
+     * On a 1.2s clip the prompt is most of the context the model has, so it
+     * stops being a hint and starts being the evidence. On an eight-second one
+     * it is one signal among many.
+     *
+     * So the hint is spent where there is enough audio to argue with it. Set to
+     * 0 to apply it everywhere, or clear WHISPER_PROMPT* to switch it off.
+     */
+    promptMinSeconds: Number(process.env.WHISPER_PROMPT_MIN_SECONDS ?? 2.5),
+
     /** How many untranscribed recordings one backlog sweep will take on. */
     sweepLimit: Number(process.env.WHISPER_SWEEP_LIMIT ?? 5),
     /** Minutes between backlog sweeps. */

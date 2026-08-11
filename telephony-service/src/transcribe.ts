@@ -28,8 +28,14 @@ import { pickBestTranscript, type Candidate } from './language.js';
  * French and quietly rig the comparison it feeds.
  *
  * Pass no language (the auto path) and only the neutral half applies.
+ *
+ * `seconds` withholds the hint from clips too short to outweigh it - see
+ * promptMinSeconds. Omit it where the audio is a whole recording rather than
+ * one utterance, which is always long enough to be worth hinting.
  */
-function promptFor(language?: string): string[] {
+function promptFor(language?: string, seconds?: number): string[] {
+  if (seconds !== undefined && seconds < config.transcription.promptMinSeconds) return [];
+
   const parts = [config.transcription.prompt];
   if (language) {
     const specific = config.transcription.promptByLanguage[language];
@@ -152,6 +158,7 @@ export async function transcribeMultilingual(
 export async function transcribeWavFile(
   wavPath: string,
   language: string,
+  seconds?: number,
 ): Promise<string | null> {
   if (!config.transcription.enabled) return null;
   try {
@@ -161,7 +168,7 @@ export async function transcribeWavFile(
       '-l', language,
       '-nt',
       '-t', String(config.transcription.threads),
-      ...promptFor(language),
+      ...promptFor(language, seconds),
     ]);
     const text = output.trim();
     return text.length > 0 ? text : null;
@@ -188,6 +195,7 @@ export async function transcribeWavFile(
  */
 export async function transcribeWavFileAuto(
   wavPath: string,
+  seconds?: number,
 ): Promise<{ text: string; language: string; probability: number } | null> {
   if (!config.transcription.enabled) return null;
   try {
@@ -197,7 +205,7 @@ export async function transcribeWavFileAuto(
       '-l', 'auto',
       '-nt',
       '-t', String(config.transcription.threads),
-      ...promptFor(),
+      ...promptFor(undefined, seconds),
     ]);
 
     const detected = /auto-detected language:\s*([a-z]{2})\s*\(p\s*=\s*([\d.]+)\)/i.exec(stderr);
@@ -229,21 +237,22 @@ export async function transcribeWavFileMultilingual(
   candidates: string[],
   fallback: string,
   hint?: string,
+  seconds?: number,
 ): Promise<{ text: string; language: string; confident: boolean } | null> {
   if (hint) {
-    const text = await transcribeWavFile(wavPath, hint);
+    const text = await transcribeWavFile(wavPath, hint, seconds);
     return text ? { text, language: hint, confident: false } : null;
   }
 
   const languages = candidates.length > 0 ? candidates : [fallback];
   if (languages.length === 1) {
-    const text = await transcribeWavFile(wavPath, languages[0]!);
+    const text = await transcribeWavFile(wavPath, languages[0]!, seconds);
     return text ? { text, language: languages[0]!, confident: false } : null;
   }
 
   const results: Candidate[] = [];
   for (const lang of languages) {
-    const text = await transcribeWavFile(wavPath, lang);
+    const text = await transcribeWavFile(wavPath, lang, seconds);
     if (text) results.push({ lang, text });
   }
 
