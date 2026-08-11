@@ -1,0 +1,22 @@
+[Unit]
+Description=DSS telephony - summarise call transcripts with Claude Code
+# The archive is a bind mount from the container. Nothing breaks if the
+# service is down; there is simply nothing new to summarise.
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/dss-telephony
+ExecStart=/usr/bin/node %h/dss-telephony/scripts/summarise-host.mjs --limit 25
+
+# Bounded on purpose. Each summary is one Claude invocation, and an unbounded
+# run after a busy day could spend a usage limit in one go - the next run picks
+# up whatever was left, because the queue is the directory itself.
+TimeoutStartSec=1800
+
+# A failure here is never urgent: the transcript and the audio are already
+# safe, and the only thing missing is a summary the next run will retry.
+Restart=no
+
+[Install]
+WantedBy=default.target

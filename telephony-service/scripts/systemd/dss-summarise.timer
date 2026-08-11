@@ -1,0 +1,17 @@
+[Unit]
+Description=DSS telephony - summarise new call transcripts every 10 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+
+# Spread the start so this never lands exactly on top of the retention sweep
+# or an n8n update, both of which also run from this host.
+RandomizedDelaySec=60
+
+# Catch up after a reboot or a suspended host rather than waiting for the next
+# tick - a call summarised late is fine, one never summarised is not.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

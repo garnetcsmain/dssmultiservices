@@ -369,7 +369,33 @@ inside the running container rather than assumed:
 ### Every call is transcribed and summarised
 
 `TRANSCRIBE_CALLS=1` extends transcription from voicemail to answered calls;
-`SUMMARISE_CALLS=1` has Hermes turn each transcript into a summary, a topic and
+Summaries are produced **on the host**, not in the container: `claude` lives in
+`~/.local/bin` on maple with credentials in `~/.claude`, and neither belongs in
+an image. The service writes transcripts; a systemd user timer fills in the
+summaries.
+
+```bash
+systemctl --user list-timers dss-summarise
+```
+
+```bash
+journalctl --user -u dss-summarise -n 50
+```
+
+The seam is the archive directory itself — a transcript with no matching
+`.summary.json` **is** the work queue. A failed run, an unreachable Claude or a
+spent usage limit therefore costs nothing: the next tick retries. By hand:
+
+```bash
+node ~/dss-telephony/scripts/summarise-host.mjs --dry-run
+```
+
+`SUMMARISE_CALLS=1` switches back to summarising inside the service via Hermes
+instead. Both write the same schema — the `model` field says which produced it —
+so nothing downstream has to care. Do not enable both, or every call is
+summarised, and billed, twice.
+
+The original in-service path: `SUMMARISE_CALLS=1` has Hermes turn each transcript into a summary, a topic and
 a list of follow-ups. Each recording produces three files side by side, sharing
 a date prefix so they are found and expire together:
 
