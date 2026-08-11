@@ -139,6 +139,9 @@ async function handleVoicemail(
     durationSeconds: seconds,
     channels: 1,
     employeeId: employee?.employeeId,
+    from,
+    to: body.To,
+    direction: 'voicemail',
   });
   console.log('[voicemail] archived', { recordingSid, status: outcome.status });
 
@@ -442,6 +445,9 @@ export function createRoutes(store: RecordingStore): Router {
       durationSeconds: Number(body.RecordingDuration ?? 0),
       channels: Number(body.RecordingChannels ?? 1),
       employeeId: employee?.employeeId,
+      from: body.From,
+      to: body.To,
+      direction: 'call',
     };
 
     const outcome = await archiveRecording(store, event);

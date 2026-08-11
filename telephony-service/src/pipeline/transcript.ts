@@ -108,8 +108,9 @@ async function transcribeAuto(
   clip: string,
   fallback: string,
   inherited?: string,
+  seconds?: number,
 ): Promise<{ text: string; language: string; confident: boolean } | null> {
-  const result = await transcribeWavFileAuto(clip);
+  const result = await transcribeWavFileAuto(clip, seconds);
   if (!result?.text) return null;
 
   const confident = result.probability >= config.transcription.autoMinProbability;
@@ -186,8 +187,8 @@ export async function transcribeRecording(
 
       const result =
         config.transcription.languageStrategy === 'auto'
-          ? await transcribeAuto(clip, fallback, inherited)
-          : await transcribeWavFileMultilingual(clip, candidates, fallback, inherited);
+          ? await transcribeAuto(clip, fallback, inherited, seconds)
+          : await transcribeWavFileMultilingual(clip, candidates, fallback, inherited, seconds);
 
       await rm(clip, { force: true }).catch(() => {});
       if (!result?.text) continue;
@@ -269,17 +270,23 @@ export async function sweepTranscripts(
 
   let done = 0;
   for (const key of missing.slice(0, limit)) {
-    // The sid is the filename; the rest of the metadata is gone with the
-    // webhook, which is why the transcript records less for a swept recording
-    // than for one done inline. Better thin than absent.
-    const recordingSid = path.basename(key, '.wav');
+    // What the archive wrote down beside the audio, which is everything the
+    // webhook knew. This used to be skipped on the theory that it was gone with
+    // the webhook - it is not, and skipping it produced transcripts with no
+    // callSid and a duration of zero, which then reached the summariser as
+    // "the call lasted 0s and the caller cannot be identified".
+    const meta = (await store.metadata(key)) ?? {};
+    const recordingSid = meta.recordingSid || path.basename(key, '.wav');
     try {
       const result = await transcribeAndStore(store, {
         recordingSid,
-        callSid: '',
+        callSid: meta.callSid ?? '',
         key,
-        direction: 'call',
-        durationSeconds: 0,
+        from: meta.from || undefined,
+        to: meta.to || undefined,
+        employeeId: meta.employeeId || undefined,
+        direction: meta.direction === 'voicemail' ? 'voicemail' : 'call',
+        durationSeconds: Number(meta.durationSeconds ?? 0),
       });
       if (result) done += 1;
     } catch (err) {

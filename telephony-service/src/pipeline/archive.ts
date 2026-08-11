@@ -12,6 +12,17 @@ export interface RecordingEvent {
   durationSeconds: number;
   channels: number;
   employeeId?: string;
+  /**
+   * Who called whom, and which kind of recording this is.
+   *
+   * Only the webhook knows these, and only for as long as it is running. A
+   * recording picked up later by the backlog sweep has nothing but its own
+   * filename to go on, so anything not written down here is gone: a swept call
+   * summarised without them reads as "cannot identify the caller".
+   */
+  from?: string;
+  to?: string;
+  direction?: 'call' | 'voicemail';
 }
 
 export type ArchiveOutcome =
@@ -62,6 +73,9 @@ export async function archiveRecording(
       durationSeconds: String(event.durationSeconds),
       channels: String(event.channels),
       employeeId: event.employeeId ?? '',
+      from: event.from ?? '',
+      to: event.to ?? '',
+      direction: event.direction ?? 'call',
       archivedAt: new Date().toISOString(),
     });
 

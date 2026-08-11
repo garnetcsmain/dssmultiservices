@@ -84,10 +84,17 @@ volume (`./models`) rather than baked into the image, so it can be swapped
 without a rebuild.
 
 `~/dss-telephony` on maple is a **loose copy, not a git clone** — `git pull`
-there does nothing. A deploy is an rsync followed by a rebuild:
+there does nothing. A deploy is an rsync followed by a rebuild.
+
+That cuts both ways: rsync ships whatever is sitting in the working tree, not
+what is committed. Gitignored scratch (`.test-media/`) and another session's
+half-written files travel just as happily as reviewed code, and `--delete`
+removes anything on maple that is not here. Check `git status` and dry-run with
+`--itemize-changes` first; treat a file you did not expect as someone's work in
+progress, not as clutter.
 
 ```bash
-rsync -a --delete --exclude='.env*' --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/
+rsync -a --delete --exclude='.env*' --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.test-media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/
 ```
 
 ```bash

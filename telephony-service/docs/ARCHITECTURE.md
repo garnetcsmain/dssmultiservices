@@ -243,6 +243,29 @@ Utterances too short to carry gradeable grammar inherit the language of the
 last confident one. People switch language between thoughts, not between "oui"
 and the sentence it answers.
 
+### The sidecar is what outlives the webhook
+
+Transcription is fired detached, after the webhook has already answered Twilio.
+That is deliberate — a bilingual call takes minutes and Twilio will not wait —
+but it means a restart, a crash or a transient whisper failure leaves a
+recording archived and silently untranscribed, with no queue to be stuck in. So
+the backlog is derived from the store itself: a `.wav` with no
+`.transcript.json` beside it *is* the work list, swept on a timer.
+
+What the sweep knows is only what the archive wrote down. Every recording gets a
+`RE….wav.meta.json` sidecar (object metadata on GCS, a file on disk locally),
+and that sidecar is the single durable record of who called whom.
+
+**A correction worth keeping.** The sweep originally skipped the sidecar, on the
+stated theory that the metadata "is gone with the webhook". It is not, and the
+damage was visible downstream: a swept recording produced a transcript with an
+empty `callSid` and `durationSeconds: 0`, which reached the summariser as fact.
+It duly reported that the call lasted zero seconds and the caller could not be
+identified, and invented a follow-up task to go check the original audio. An
+empty field is not neutral — it is an assertion, and something further down the
+line will believe it. The archive now also records `from`, `to` and `direction`,
+which the webhook had all along and nobody had thought to keep.
+
 **A correction worth keeping.** The staff side was originally pinned to Spanish,
 on the grounds that DSS employees mostly speak it. Measured against a real call,
 that was wrong: David was speaking French and English, and every one of his
@@ -318,6 +341,40 @@ feeds. Only the shared half — names, acronyms, streets — is language-neutral
 The risk to watch is bleed: an initial prompt can push a model into emitting
 glossary terms nobody said, especially on unclear audio. Keep the list short,
 and check a transcript after changing it.
+
+**Measured, on the reference call.** Same audio, same model, the hint the only
+variable, with the no-hint arm reproducing the archived transcript exactly — so
+the difference is the hint and nothing else.
+
+| utterance | without | with |
+|---|---|---|
+| 10.0s | les fonds **de salubrité** santé … **le service** de santé | les fonds **des** salubrités de santé … **les services** de santé |
+| 7.9s | *(scored as Spanish)* toda la conversación **como le faut** | *(scored as French)* toute la conversation comme il faut |
+| 2.1s | Merci. | Ayo. |
+| 1.2s | Ok, ya, tranquille. | Ok, ja, trenquemos. |
+
+No bleed: the only glossary word gained anywhere was "services", in the one
+place the term was actually spoken. Cost, 7s on a 466s run.
+
+But the hint is not free on short audio, and the mechanism is not mysterious:
+on a 1.2s clip the prompt is most of the context the model has, so it stops
+being a hint and becomes the evidence. So it is spent only where there is
+enough audio to argue with it — `WHISPER_PROMPT_MIN_SECONDS`, default 2.5s,
+the same threshold already used to decide an utterance is too short to score.
+
+A third run confirmed the gate does exactly that and nothing else: of 16
+utterances, the 10 below the floor came back identical to the no-hint arm and
+the 6 above it identical to the hinted arm, with **none landing in a third
+state**. Language inheritance was the thing to worry about there — short
+utterances inherit from long ones — and it did not leak.
+
+Two caveats worth keeping. This rests on **one 46-second call**, so it is a
+mechanism supported by an example rather than a result. And the gate is not a
+pure win above the floor: it keeps two regressions it cannot see, "J'ai besoin"
+degraded to "Je besoin", and a 3.5s utterance replaced by subtitle boilerplate
+from whisper's training data — "Sous-titrage Société Radio-Canada". That last
+one is a known whisper failure on unclear audio and has nothing to do with the
+glossary; no prompt setting fixes it.
 
 ### Where the summary runs, and why it is not in the container
 
@@ -704,18 +761,38 @@ contact's 24-hour window needs an approved template, and none exists.
   in the WhatsApp About field is the cheap mitigation
 - Toll-free verification requirement was never specified
 - Three stale recordings on Twilio, including a consumed OTP
-- No real inbound call has ever run: voicemail, archive and the SMS
-  notification are untested against an actual caller
 - The line's reachability depends on Tailscale's control plane and a DERP
   relay, with no alerting when either drops
-- Employee-side language (mostly Spanish) is inert until dual-channel
-  recordings are transcribed per channel instead of downmixed
 - Hermes prompt tokens (~33k/message) remain unmeasured and appear on no
   telephony invoice
-- The IVR is verified against the running service but has never carried a real
-  call; ring timing under Rogers still needs re-measuring with the menu on
+- The IVR has never carried a real call and is currently `off`; ring timing
+  under Rogers still needs re-measuring with the menu on
+
+**A rejected call lands in the employee's personal voicemail.** Observed on
+2026-08-10: the call rang out to David's Rogers voicemail, and the greeting —
+"À la tonalité, veuillez enregistrer votre message" — was archived, transcribed
+and summarised as though it were a customer conversation, logged as
+`outcome: completed`. The carrier answers, so from Twilio's side the call
+succeeded. Screening the leg (`<Number url="…">` with a Gather, so a voicemail
+system cannot press a key) is the fix on the table; not implemented, and the
+call is not ours to make alone since it changes how staff answer.
+
+**Two whisper failures the vocabulary gate does not reach**, both above the
+duration floor and so both still live: "J'ai besoin" degraded to "Je besoin",
+and a 3.5s utterance replaced with subtitle boilerplate from training data,
+"Sous-titrage Société Radio-Canada". No prompt setting fixes the second.
+
+**Recordings archived before `from`/`to` were persisted cannot recover them.**
+The sweep now hydrates everything the sidecar holds, but a sidecar written
+earlier simply does not have those fields. Affects the two calls of
+2026-08-10.
 - Outbound media has never been sent to a real handset — every message type is
   built to Vonage's published shape, none is confirmed against a device
+- Our own voicemail and its SMS notification are still untested against a real
+  caller. Two real calls have now run end to end — archived, transcribed and
+  summarised — but both reached a human or the employee's carrier, so neither
+  exercised this path.
 - `npm test` covers the pure logic (directive parsing, media signing and path
-  escape, IVR routing, inbound classification). Everything touching a provider
-  is still verified by hand.
+  escape, IVR routing, inbound classification, utterance segmentation, language
+  scoring, summary section parsing, archive key derivation and sidecar
+  metadata). Everything touching a provider is still verified by hand.

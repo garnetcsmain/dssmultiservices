@@ -26,6 +26,15 @@ export interface RecordingStore {
    * later, when the model or the language handling improves.
    */
   get(key: string): Promise<Buffer | null>;
+  /**
+   * What was recorded alongside an object at write time. Null when absent.
+   *
+   * The archive is the only durable record of who called whom: the webhook that
+   * knew is long gone by the time a backlog sweep picks the recording up. Both
+   * drivers already keep this - local as a sidecar, GCS as object metadata -
+   * and this is what makes it readable without knowing which one is in use.
+   */
+  metadata(key: string): Promise<Record<string, string> | null>;
   /** Keys whose stored timestamp is older than the cutoff. */
   listExpired(cutoff: Date): Promise<string[]>;
   /**
