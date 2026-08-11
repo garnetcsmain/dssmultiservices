@@ -174,6 +174,12 @@ a 5xx. Calls still connect and texts still reach staff; nothing is recorded,
 transcribed or relayed back. See the architecture doc for the full table of
 what degrades.
 
+Deployed 2026-08-10 to `dss-telephony-fallback-1868-prod.twil.io`, wired as the
+fallback on both directory numbers. The functions are `protected`, so Twilio's
+runtime rejects anything without a valid signature — verified at 403. Public
+visibility would have left an open endpoint able to send MMS to David and Freddy
+on our bill.
+
 Deploy it, or redeploy after **any** edit to `src/directory.ts`:
 
 ```bash
@@ -736,10 +742,11 @@ Sandbox does not sign its webhooks, so it needs
   outage would have kept calls connecting and texts flowing, tagged `[SECOURS]`.
   It does not cover maple answering `200` while broken, and it is still not
   monitoring.
-- **The fallback is built and tested but not deployed.** `scripts/deploy-fallback.mjs`
-  has never been run against the account; the numbers have no `SmsFallbackUrl`
-  or `VoiceFallbackUrl` set. Until it is run, maple remains a single point of
-  failure for the whole line.
+- **The fallback has never been exercised by a real outage.** It is deployed and
+  wired, and its endpoints were verified with signed requests — but nothing has
+  yet arrived at them from Twilio itself. The honest test is stopping the
+  container on maple and texting the 450: the message should arrive tagged
+  `[SECOURS]`. Reversible with `docker compose up -d`.
 - **Hermes prompt tokens are unmeasured and could dominate.** ~33k per message
   at last look, on no telephony invoice. Every reply logs `promptTokens`.
 - **Toll-free verification.** The requirement was truncated in the brief. Twilio's
