@@ -76,6 +76,19 @@ export function isVerificationRobot(from: string): boolean {
   return config.voice.otpCallers.some((caller) => sameNumber(from, caller));
 }
 
+/*
+ * Recording the whole call, rather than only from <Record>, was tried on
+ * 2026-08-12 and does not work. `POST /Calls/{sid}/Recordings` answers
+ * "Requested resource is not eligible for recording" for an inbound call whose
+ * TwiML is still executing - at webhook time, and again at 1.2s, 2.7s and 5.2s
+ * into the call, so it is not a matter of waiting for the call to be answered.
+ *
+ * It would have been worth having: when a mistimed keypress made the robot
+ * hang up earlier that day, <Record> caught 400ms and the diagnosis had to be
+ * rebuilt from the call log. If someone wants this, <Start><Stream> is the
+ * remaining avenue, and it is a far larger piece of work than it looks.
+ */
+
 /**
  * Answers a verification robot: wait out its prompt, press the key it asks
  * for, then record what it dictates.
