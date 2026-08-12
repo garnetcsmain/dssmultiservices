@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { config } from '../config.js';
 import { validateTwilioSignature, sendSms, sendMms } from '../twilio.js';
-import { lookupByNumber, smsRecipients, smsMode } from '../directory.js';
+import { lookupByNumber, smsRecipients, smsMode, nanp } from '../directory.js';
 import { rememberThread, recallThread, type RecordingStore } from '../threads.js';
 
 /**
@@ -108,23 +108,6 @@ export function matchRecipient(from: string, recipients: string[]): string | nul
   const target = nanp(from);
   if (!target) return null;
   return recipients.find((recipient) => nanp(recipient) === target) ?? null;
-}
-
-/**
- * Reduces a North American number to its ten significant digits.
- *
- * Twilio always sends E.164, so the leading 1 is consistent on the wire - but
- * the directory is hand-edited, and an entry written as "5144637712" would
- * otherwise never match the "+15144637712" Twilio reports. The consequence of
- * that near-miss is not a failed lookup, it is a staff reply being treated as
- * a customer message and forwarded onward.
- *
- * Only strips the 1 at eleven digits, so it cannot mangle an international
- * number into a false match with a local one.
- */
-function nanp(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
 }
 
 /**

@@ -6,7 +6,12 @@ import { transcribeAudio, extractVerificationCode } from '../transcribe.js';
 import { transcribeAndStore } from '../pipeline/transcript.js';
 import { archiveRecording, type RecordingEvent } from '../pipeline/archive.js';
 import type { RecordingStore } from '../storage/index.js';
-import { lookupByNumber, type DirectoryEntry } from '../directory.js';
+import {
+  lookupByNumber,
+  smsRecipients,
+  sameNumber,
+  type DirectoryEntry,
+} from '../directory.js';
 import { say, renderMenu, parseLang, languageFor, isLanguageKey, PROMPTS } from '../ivr.js';
 import type { Lang } from '../voices.js';
 
@@ -66,13 +71,99 @@ function offerVoicemail(
   response.hangup();
 }
 
+/** Whether this call is a verification robot rather than a person. */
+export function isVerificationRobot(from: string): boolean {
+  return config.voice.otpCallers.some((caller) => sameNumber(from, caller));
+}
+
 /**
- * Fetches the verification recording and prints the code to the log.
+ * Answers a verification robot: wait out its prompt, press the key it asks
+ * for, then record what it dictates.
+ *
+ * Recording before pressing captures only the prompt - which is exactly what
+ * the first attempt did, and why no code was ever read. No beep either: an
+ * automated reader can be thrown off by one.
+ *
+ * The `action` is explicit rather than inherited. A `<Record>` with no action
+ * re-requests whichever url produced it, and this document is now served from
+ * the main voice route too - where a re-request would look like a fresh call
+ * from the same robot and hand back another `<Record>`, forever.
+ */
+function captureVerificationCode(response: InstanceType<typeof VoiceResponse>): void {
+  response.pause({ length: config.voice.otpDtmfDelaySeconds });
+  response.play({ digits: config.voice.otpDtmfDigits });
+  response.record({
+    maxLength: 90,
+    playBeep: false,
+    trim: 'do-not-trim',
+    transcribe: config.voice.transcribeOtp,
+    action: `${config.publicBaseUrl}/webhooks/twilio/otp`,
+    method: 'POST',
+  });
+}
+
+/**
+ * Texts a captured code to the people entitled to see it.
+ *
+ * A code that only reaches the container log requires someone to be watching
+ * the container log, which is the same as not working. Sent from the main line
+ * rather than the line that received it: the main line is `notify`, so a staff
+ * member who replies to this message has their reply dropped instead of
+ * relayed onward to whichever customer wrote in last.
+ *
+ * The transcript rides along whenever no code could be read, because a human
+ * can nearly always see the digits in text that defeated the extractor.
+ */
+async function notifyOtpCode(
+  dssNumber: string,
+  code: string | null,
+  transcript: string,
+): Promise<void> {
+  const entry = lookupByNumber(dssNumber);
+  const recipients = [...new Set([...(entry ? smsRecipients(entry) : []), ...config.voice.otpNotifyTo])];
+
+  if (recipients.length === 0) {
+    console.warn('[otp] nobody to text the code to', { dssNumber });
+    return;
+  }
+  if (!config.voice.smsFrom) {
+    console.warn('[otp] TWILIO_SMS_FROM unset - code stays in the log');
+    return;
+  }
+
+  const body = [
+    `Code de vérification DSS (${dssNumber})`,
+    code ? `Code: ${code}` : 'Code illisible - transcription ci-dessous',
+    code ? '' : transcript.slice(0, 300),
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  for (const recipient of recipients) {
+    try {
+      const sid = await sendSms(recipient, body);
+      console.log('[otp] code texted', { to: recipient, sid });
+    } catch (err) {
+      console.error('[otp] could not text the code', {
+        to: recipient,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+}
+
+/**
+ * Fetches the verification recording, reads the code out of it, and hands it
+ * to whoever is waiting for it.
  *
  * Twilio needs a moment before recording media is fetchable, so this retries
  * briefly rather than failing on the first 404.
  */
-async function reportOtpCode(mediaUrl: string, recordingSid: string): Promise<void> {
+async function reportOtpCode(
+  mediaUrl: string,
+  recordingSid: string,
+  dssNumber: string,
+): Promise<void> {
   try {
     let wav: Buffer | undefined;
     for (let attempt = 1; attempt <= 4; attempt++) {
@@ -98,6 +189,8 @@ async function reportOtpCode(mediaUrl: string, recordingSid: string): Promise<vo
     console.log('[otp] CODE:', code ?? '(no 6-digit run found)');
     console.log('[otp] transcript:', transcript.slice(0, 200));
     console.log('[otp] ===================================');
+
+    await notifyOtpCode(dssNumber, code, transcript);
   } catch (err) {
     console.error('[otp] could not transcribe verification call', {
       recordingSid,
@@ -212,6 +305,30 @@ export function createRoutes(store: RecordingStore): Router {
     const response = new VoiceResponse();
     const lang: Lang = 'fr';
 
+    // A verification robot, not a customer - checked before anything else,
+    // including whether the number is even in the directory.
+    //
+    // This is what makes the OTP path work unattended. It used to require
+    // repointing the number's voice url at /webhooks/twilio/otp before the
+    // code was requested and putting it back afterwards, which meant every
+    // registration hung on someone remembering, and left the line silently
+    // recording real callers in between. Recognising the caller costs neither.
+    //
+    // Caller ID is spoofable, so this is not a security boundary. The worst a
+    // spoofer achieves is being recorded reading nothing to nobody.
+    if (isVerificationRobot(body.From ?? '')) {
+      console.log('[otp] verification call received', {
+        from: body.From,
+        to: dialed,
+        callSid: body.CallSid,
+        willPress: config.voice.otpDtmfDigits,
+        afterSeconds: config.voice.otpDtmfDelaySeconds,
+      });
+      captureVerificationCode(response);
+      res.type('text/xml').send(response.toString());
+      return;
+    }
+
     // A directory entry with no destination is as unroutable as no entry at
     // all, and bridging to an empty number would drop the call silently.
     if (!employee || !employee.forwardTo) {
@@ -300,28 +417,29 @@ export function createRoutes(store: RecordingStore): Router {
   });
 
   /**
-   * One-off capture endpoint for an automated verification call.
+   * Where a verification capture finishes, and a manual override when needed.
    *
-   * Meta sends WhatsApp registration codes from short codes, and Twilio
-   * long-code numbers cannot receive SMS from short codes - the message never
-   * reaches the network at all, with no error to see. Voice is the only
-   * delivery path that works, so this answers the call and records the robot
-   * reading the digits.
+   * Meta and Intuit both send verification codes by voice because the SMS
+   * version never survives: Twilio redacts an inbound one-time code and fails
+   * the message with error 30038, so it never reaches this service at all.
+   * This route answers such a call and records the robot reading the digits.
+   *
+   * Normally nothing needs to be pointed here - `/webhooks/twilio/voice`
+   * recognises the robot by its caller ID and serves the same document, whose
+   * `action` lands the finished recording back on this route. Pointing a
+   * number's voice url here directly still works, and is the escape hatch for
+   * a service whose caller ID we have not seen yet. Do that only while a
+   * verification is in flight: everyone reaching it is silently recorded,
+   * which is not a state to leave a customer-facing line in.
    *
    * Deliberately does NOT set recordingStatusCallback: the archive pipeline
    * would upload and then delete the recording from Twilio, and the point here
-   * is to leave it in the console where it can be played back.
-   *
-   * Point the number's voice URL here only while a verification is in flight,
-   * then put it back. Any caller reaching this gets silently recorded, which
-   * is not something to leave pointed at a customer-facing line.
+   * is to leave it where it can be played back.
    */
   router.post('/webhooks/twilio/otp', validateTwilioSignature(), (req, res) => {
     const body = req.body as Record<string, string>;
     const response = new VoiceResponse();
 
-    // <Record> with no action re-requests THIS url when it finishes, which
-    // would hand back another <Record> and loop until the caller hangs up.
     // The action request is the one carrying RecordingSid, so that field is
     // how we tell "call just arrived" from "recording just finished".
     if (body.RecordingSid) {
@@ -333,7 +451,9 @@ export function createRoutes(store: RecordingStore): Router {
       // Hang up first, transcribe after. Whisper takes ~15s on a call this
       // length and Twilio expects TwiML promptly - blocking here would hold
       // the line open and risk a webhook timeout.
-      if (body.RecordingUrl) void reportOtpCode(body.RecordingUrl, body.RecordingSid);
+      if (body.RecordingUrl) {
+        void reportOtpCode(body.RecordingUrl, body.RecordingSid, body.To ?? '');
+      }
 
       response.hangup();
       res.type('text/xml').send(response.toString());
@@ -342,25 +462,14 @@ export function createRoutes(store: RecordingStore): Router {
 
     console.log('[otp] verification call received', {
       from: body.From,
+      to: body.To,
       callSid: body.CallSid,
       willPress: config.voice.otpDtmfDigits,
       afterSeconds: config.voice.otpDtmfDelaySeconds,
+      via: 'manual override',
     });
 
-    // Wait out the spoken prompt, then send the DTMF it asked for. Recording
-    // before pressing captures only the prompt - which is exactly what the
-    // first attempt did, and why no code was ever read.
-    response.pause({ length: config.voice.otpDtmfDelaySeconds });
-    response.play({ digits: config.voice.otpDtmfDigits });
-
-    // Only now does the code get read, so recording starts after the keypress.
-    // No beep: an automated reader can be thrown off by one.
-    response.record({
-      maxLength: 90,
-      playBeep: false,
-      trim: 'do-not-trim',
-      transcribe: config.voice.transcribeOtp,
-    });
+    captureVerificationCode(response);
     res.type('text/xml').send(response.toString());
   });
 

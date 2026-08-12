@@ -271,13 +271,25 @@ export async function transcribeWavFileMultilingual(
 /**
  * Pulls a verification code out of a transcript.
  *
- * The reader repeats the code several times, and whisper renders it as a run
- * of digits. Taking the most frequent match rather than the first guards
- * against one mangled repetition winning.
+ * The reader repeats the code several times, so the most frequent match wins
+ * rather than the first - one mangled repetition should not decide it.
+ *
+ * Robots dictate a code digit by digit, and whisper writes down what it hears:
+ * the Intuit call of 2026-08-12 transcribed as "est 7 3 4 6 5 1", which
+ * contains no six-digit run at all and reported "(no 6-digit run found)" while
+ * the code sat in plain sight. So the separated form is searched too, joining
+ * digits that are split only by spaces, dots or dashes. Both forms are counted
+ * together, which is what lets three spaced repetitions outvote a stray
+ * six-digit number elsewhere in the audio.
  */
 export function extractVerificationCode(transcript: string, digits = 6): string | null {
-  const matches = transcript.match(new RegExp(`\\b\\d{${digits}}\\b`, 'g'));
-  if (!matches?.length) return null;
+  const pattern = new RegExp(`\\b\\d{${digits}}\\b`, 'g');
+  // Only collapses a separator sitting between two digits, so "3 45 pm" can
+  // join but "1. Bonjour 234567" cannot pull a word across.
+  const joined = transcript.replace(/(\d)[\s.\-–]+(?=\d)/g, '$1');
+
+  const matches = [...(transcript.match(pattern) ?? []), ...(joined.match(pattern) ?? [])];
+  if (!matches.length) return null;
 
   const counts = new Map<string, number>();
   for (const m of matches) counts.set(m, (counts.get(m) ?? 0) + 1);

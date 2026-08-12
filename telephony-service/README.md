@@ -93,8 +93,14 @@ removes anything on maple that is not here. Check `git status` and dry-run with
 `--itemize-changes` first; treat a file you did not expect as someone's work in
 progress, not as clutter.
 
+`vonage-private.key` is the one exclusion you cannot omit. It lives only on
+maple, it is gitignored so it is not in the working tree, and `--delete` will
+therefore remove it — Vonage never shows that key again, and the WhatsApp
+bridge dies with it. The command below excludes it; the dry run caught it doing
+otherwise on 2026-08-12.
+
 ```bash
-rsync -a --delete --exclude='.env*' --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.test-media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/
+rsync -a --delete --exclude='.env*' --exclude=vonage-private.key --exclude=.DS_Store --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.test-media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/
 ```
 
 ```bash
@@ -324,6 +330,54 @@ Twilio Studio could do "ring, then voicemail" with no server at all, but it
 cannot download a recording, verify it, delete the Twilio copy, and transcribe
 it locally — which is the entire cost argument. Choosing Studio would mean
 paying Twilio for storage and $0.05/min for transcription.
+
+## Verification codes arrive by voice, always
+
+A one-time code **cannot** reach a DSS number by text. Twilio finds the code in
+an inbound message, redacts the digits and fails the message with error
+[30038](https://www.twilio.com/docs/api/errors/30038) — deliberate, to stop its
+numbers being used as somebody's 2FA inbox. The message never reaches this
+service, so nothing appears in the container log; the only trace is in the
+Messages API, `status: failed`. Confirmed 2026-08-12 on a real QuickBooks code
+(`SMe603cf08db2ca45d55ec62728299ade5`, short code `28849` → `+14385006595`).
+The documented remedy — upgrade from a trial account — does not apply: the
+account is already `Full`. Vonage is no escape either; its virtual numbers do
+not receive short-code SMS at all.
+
+So voice is not a workaround here, it is the only channel. `/webhooks/twilio/voice`
+recognises a verification robot by the number it calls from and answers with
+the capture document instead of routing the call: wait `OTP_DTMF_DELAY_SECONDS`,
+press `OTP_DTMF_DIGITS`, record 90s, transcribe locally, text the code to the
+line's recipients plus `OTP_NOTIFY_TO`.
+
+| Robot | Calls from | Confirmed |
+|---|---|---|
+| Meta — WhatsApp registration | `+1 860 724 2481` | 2026-08-11, 2026-08-12 |
+| Intuit — QuickBooks 2FA | `+1 867 794 2309` | 2026-08-12, code read |
+
+`OTP_CALLER_NUMBERS` replaces that list without a deploy. A service whose
+caller ID has not been seen yet is the one case still needing the old dance:
+point the number's `VoiceUrl` at `/webhooks/twilio/otp`, take the code, put it
+back — and put it back, because everyone reaching that route is silently
+recorded and never connected to anyone.
+
+This used to be the *only* way, which is why it kept failing. Three Meta calls
+on 11–12 August were routed to Francisca's phone as if they were customers,
+rang out, and were offered voicemail; the robot hung up each time and the code
+was consumed for nothing. Nothing in the service was broken — the webhook was
+simply never repointed. Caller-ID recognition removes the step a human has to
+remember.
+
+Two things about the DTMF press are worth keeping straight. Meta's Embedded
+Signup call is an IVR that reads nothing until a key is pressed, so the press
+is mandatory there. Intuit's call, and the WhatsApp app's, just dictate the
+code — the press is inert, and the 7-second wait costs the first reading of
+three. Both are env vars precisely because they are the robots' behaviour to
+change, not ours.
+
+Whisper writes a dictated code as `7 3 4 6 5 1`, with no six-digit run in it.
+`extractVerificationCode` searches the joined form as well, which is why the
+Intuit call that logged `(no 6-digit run found)` would now print `734651`.
 
 ## The Hermes bridge
 
@@ -684,11 +738,9 @@ because they need a Meta login and accepting Meta's terms.
    or on a real host once one exists.
 3. Vonage Dashboard → WhatsApp → **Embedded Signup**. Needs the Meta Business
    account and Business verification, and you must accept Meta's terms.
-4. Enter `+14502358434` and take the OTP **by voice, not SMS**. Meta sends SMS
-   codes from short codes and Twilio long codes cannot receive those — the
-   message never reaches the network, with no error anywhere to see it. The
-   `/webhooks/twilio/otp` route exists precisely to answer that call, press the
-   key the IVR asks for, and record the digits.
+4. Enter `+14502358434` and take the OTP **by voice, not SMS**. See
+   [Verification codes arrive by voice, always](#verification-codes-arrive-by-voice-always)
+   — the text cannot arrive, and the voice call is captured automatically.
 
    **The verification call is an IVR, not a recording.** It says "to receive
    your WhatsApp verification code, press 0" and will not read anything until a
@@ -761,6 +813,14 @@ Sandbox does not sign its webhooks, so it needs
 - **The Vonage 226 number is billing for nothing.** `+1 226 277 0423` is linked to
   no application and is not the chosen WhatsApp number. Release it or repurpose it.
 - **Three stale recordings on Twilio**, including a consumed OTP.
+- **Caller-ID recognition is unproven against Meta.** The branch is tested, and
+  Intuit's call was captured end to end — but `+1 860 724 2481` has only ever
+  reached the old manually-repointed route. Francisca's WhatsApp registration
+  is the first real test.
+- **`OTP_NOTIFY_TO` is empty.** Until it names someone, a captured code is
+  texted only to the line's own recipient — which for the 438 is Francisca
+  alone, and the point of putting her verification on a DSS number was that the
+  company sees the code too.
 - **Retention period.** `RETENTION_DAYS` defaults to 365. Confirm against whatever
   DSS's actual record-keeping obligation is.
 - **Display name "Esperancita" pending Meta review.** A first-name-only display

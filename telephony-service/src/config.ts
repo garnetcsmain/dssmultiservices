@@ -17,6 +17,30 @@ if (storageDriver !== 'local' && storageDriver !== 'gcs') {
   throw new Error(`STORAGE_DRIVER must be "local" or "gcs", got "${storageDriver}"`);
 }
 
+/**
+ * The numbers verification robots call from.
+ *
+ * Both confirmed against real calls to `+1 438 500 6595`, not guessed:
+ *   +1 860 724 2481  Meta - WhatsApp registration
+ *   +1 867 794 2309  Intuit - QuickBooks two-step verification
+ *
+ * A call from one of these is answered by the capture path instead of being
+ * routed to a person. That branch is the only way a code reaches anyone at
+ * all: Twilio redacts inbound verification SMS and fails it with error 30038,
+ * so voice is not a convenience here, it is the sole delivery channel.
+ *
+ * Overridable so a new service - or a robot that changes its caller ID - is an
+ * env edit rather than a deploy.
+ */
+const DEFAULT_OTP_CALLERS = '+18607242481,+18677942309';
+
+function numberList(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 const voiceTier = process.env.VOICE_TIER ?? 'generative';
 const voices = applyOverrides(voiceTable(voiceTier), process.env.VOICE_OVERRIDES ?? '');
 
@@ -61,6 +85,15 @@ export const config = {
     // because the prompt's wording and timing are Meta's to alter.
     otpDtmfDigits: process.env.OTP_DTMF_DIGITS ?? '0',
     otpDtmfDelaySeconds: Number(process.env.OTP_DTMF_DELAY_SECONDS ?? 7),
+
+    // Who is recognised as a robot rather than a caller. See the constant.
+    otpCallers: numberList(process.env.OTP_CALLER_NUMBERS ?? DEFAULT_OTP_CALLERS),
+
+    // Copied on every captured code, on top of whoever the line already texts.
+    // The point of putting an employee's verification on a DSS number is that
+    // the company can see the code too; without someone here, the code reaches
+    // only the employee and the number may as well have been their own.
+    otpNotifyTo: numberList(process.env.OTP_NOTIFY_TO ?? ''),
 
     // How long the employee's phone rings before voicemail takes over.
     // 20s is four or five rings, and sits just under the ~20-25s at which

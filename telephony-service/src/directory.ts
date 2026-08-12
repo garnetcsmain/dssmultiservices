@@ -80,9 +80,15 @@ const DIRECTORY: Record<string, DirectoryEntry> = {
     // the caller hears the notice, but the person answering is being recorded
     // too and should know it.
     forwardTo: '+15144637712',
-    // Texts to the main line reach David and Freddy both. The traffic here is
-    // verification codes and alerts rather than conversation - two people see
-    // a 2FA code arrive, and neither has to be at their desk.
+    // Texts to the main line reach David and Freddy both: alerts rather than
+    // conversation, and two people see one arrive without either being at
+    // their desk.
+    //
+    // This used to say the traffic here is verification codes. It cannot be.
+    // Twilio finds the one-time code in an inbound message, redacts it and
+    // fails the message with error 30038 - confirmed 2026-08-12 on a real
+    // QuickBooks code - so no 2FA text ever reaches this service, on any line.
+    // Codes arrive by voice instead, through the capture path in routes/voice.
     smsForwardTo: ['+15144637712', '+17276136004'],
     // Explicitly one-way. Nobody answers customers on this line, so a text
     // from David or Freddy to it must not be relayed to whoever wrote in last.
@@ -96,10 +102,16 @@ const DIRECTORY: Record<string, DirectoryEntry> = {
     // A real two-way line: she answers customers from her own phone and they
     // only ever see the DSS number.
     smsMode: 'relay',
-    // Not registered yet. Meta sends the verification code from a short code,
-    // which Twilio long numbers cannot receive at all, so this has to go
-    // through voice verification on /webhooks/twilio/otp - the same path the
-    // 450 used. Purchased 2026-08-10, Pointe-Claire, voice + SMS + MMS.
+    // Not registered yet, and the registration will be the WhatsApp Business
+    // app on her own handset rather than the API - so this line stays false:
+    // a number lives in the mobile app or on a BSP, never both, and nothing
+    // here bridges her WhatsApp.
+    //
+    // The registration code has to come by voice. Meta sends the SMS version
+    // from a short code and Twilio redacts inbound one-time codes anyway
+    // (error 30038), so the text cannot arrive by either route. The voice call
+    // is recognised by its caller ID and captured automatically; see
+    // config.voice.otpCallers. Purchased 2026-08-10, Pointe-Claire.
     whatsappEnabled: false,
   },
 };
@@ -125,6 +137,34 @@ export function allEntries(): DirectoryEntry[] {
  */
 export function allLines(): Array<{ number: string; entry: DirectoryEntry }> {
   return Object.entries(DIRECTORY).map(([number, entry]) => ({ number, entry }));
+}
+
+/**
+ * Reduces a North American number to its ten significant digits.
+ *
+ * Twilio always sends E.164, so the leading 1 is consistent on the wire - but
+ * every hand-written list in this service is typed by a person, and an entry
+ * written as "5144637712" would otherwise never match the "+15144637712"
+ * Twilio reports. The consequence of that near-miss is never a failed lookup;
+ * it is a staff reply treated as a customer message, or a verification robot
+ * routed to somebody's phone.
+ *
+ * Only strips the 1 at eleven digits, so it cannot mangle an international
+ * number into a false match with a local one.
+ *
+ * Lives here rather than beside either caller because both the SMS relay and
+ * the voice router decide who someone is with it, and two copies of this rule
+ * would eventually disagree.
+ */
+export function nanp(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+}
+
+/** Whether two written numbers name the same North American phone. */
+export function sameNumber(a: string, b: string): boolean {
+  const left = nanp(a);
+  return left.length > 0 && left === nanp(b);
 }
 
 /** Twilio is consistent about E.164, but inbound config edits are not. */
