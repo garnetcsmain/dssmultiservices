@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { matchRecipient } from '../src/routes/sms.js';
-import { lookupByNumber, smsRecipients } from '../src/directory.js';
+import { lookupByNumber, smsRecipients, allEntries } from '../src/directory.js';
 
 /**
  * Which way a message is travelling. Getting this backwards is not a cosmetic
@@ -72,9 +72,22 @@ test('the main line is notify-only', () => {
   assert.equal(smsMode(main), 'notify');
 });
 
-test("Francisca's line is a real two-way relay", () => {
+test("Francisca's line does not relay either", () => {
+  // It used to. Turned off 2026-08-12: she has no need to answer by text, and
+  // a relay line sends anything from her phone to the last customer who wrote
+  // in - a verification code forwarded to the office being the obvious way
+  // that goes wrong.
   const line = lookupByNumber('+14385006595')!;
-  assert.equal(smsMode(line), 'relay');
+  assert.equal(smsMode(line), 'notify');
+});
+
+test('no line in the directory relays a staff message onward', () => {
+  // The whole-directory version of the two tests above, so a line added later
+  // cannot quietly reintroduce the failure mode by declaring itself a relay.
+  // Deleting this test is a decision; passing it by accident is not possible.
+  for (const entry of allEntries()) {
+    assert.equal(smsMode(entry), 'notify', `${entry.name} would relay staff messages`);
+  }
 });
 
 test('a line that forgets to declare a mode does not relay', () => {

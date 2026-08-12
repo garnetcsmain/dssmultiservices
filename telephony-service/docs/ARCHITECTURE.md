@@ -690,7 +690,7 @@ What it deliberately does **not** do:
 | Call recorded, archived, transcribed, summarised | yes | **no** |
 | Unanswered call | our voicemail, archived | employee's carrier mailbox |
 | Customer text reaches staff | yes | yes, tagged `[SECOURS]` |
-| Staff reply reaches the customer | yes (relay lines) | **no** — refused to their face |
+| Staff reply reaches the customer | no line relays since 2026-08-12 | no |
 | WhatsApp | yes | **no** — Vonage points at maple only |
 
 Not recording is a decision, not an omission: the archive is on maple, so audio
@@ -703,10 +703,12 @@ Two gaps worth stating plainly:
 - **A 200 is not health.** If maple answers but behaves badly — container up
   with whisper wedged, Funnel up proxying to a dead upstream — the fallback
   never fires. It covers hard failures only.
-- **Relay lines go one-way.** There is no thread memory on Twilio, so during an
-  outage a customer reaches Francisca but her reply cannot be routed back. She
-  is told so rather than having it vanish. The notify line has no such gap,
-  which is fortunate, since that is the one carrying 2FA codes.
+- ~~**Relay lines go one-way.**~~ Closed 2026-08-12, by removing the relay
+  rather than fixing it: Francisca has no need to answer customers by text, and
+  a relay line sends *anything* from her phone to the last customer who wrote
+  in. Both lines are now `notify`, so the fallback's lack of thread memory
+  costs nothing — there is no reply for it to fail to route. The relay mode
+  itself is still implemented and tested; no line declares it.
 
 The `[SECOURS]` tag on forwarded messages is the outage alarm. Without it a
 maple outage looks identical to a normal day from a phone — texts keep

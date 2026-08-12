@@ -40,7 +40,7 @@ async function load(which: 'sms' | 'voice'): Promise<(event: Record<string, stri
 }
 
 const MAIN = '+14502358434'; // notify: David + Freddy, nobody answers customers
-const FRANCISCA = '+14385006595'; // relay: two-way in normal operation
+const FRANCISCA = '+14385006595'; // notify: texts reach her, she answers by phone
 const DAVID = '+15144637712';
 const FREDDY = '+17276136004';
 const CUSTOMER = '+15145551234';
@@ -107,16 +107,17 @@ test('a staff message on a notify line sends nothing at all', async () => {
   assert.ok(!xml.includes('445566'), 'message content leaked into the response');
 });
 
-test('a staff reply on the relay line is refused to their face, not dropped', async () => {
+test('a staff message on her line sends nothing either', async () => {
+  // Her line used to be a relay, and during an outage the fallback answered her
+  // with "service degraded" rather than dropping her reply - there is no thread
+  // memory on Twilio, so it could not route it. Since 2026-08-12 no line
+  // relays, so the honest behaviour is the same as the main line's: send
+  // nothing. Nobody is waiting for a reply that was never going to arrive.
   const handler = await load('sms');
   const xml = handler({ To: FRANCISCA, From: '+14387287236', Body: 'je passe demain', NumMedia: '0' });
 
-  // Exactly one message, and it goes back to her.
-  assert.equal(xml.match(/<Message/g)?.length, 1);
-  assert.match(xml, /<Message to="\+14387287236"/);
-  assert.match(xml, /degrade/);
-  // Her words must not be in it - the point is that they went nowhere.
-  assert.ok(!xml.includes('je passe demain'));
+  assert.ok(!xml.includes('<Message'), 'a staff message was forwarded during fallback');
+  assert.ok(!xml.includes('je passe demain'), 'message content leaked into the response');
 });
 
 test('a text to an unknown line is answered with silence', async () => {

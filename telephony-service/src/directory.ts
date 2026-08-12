@@ -99,9 +99,15 @@ const DIRECTORY: Record<string, DirectoryEntry> = {
     employeeId: 'emp_002',
     name: 'Francisca Rojas',
     forwardTo: '+14387287236',
-    // A real two-way line: she answers customers from her own phone and they
-    // only ever see the DSS number.
-    smsMode: 'relay',
+    // Texts reach her; she does not answer them here. This was a relay - she
+    // could reply from her own phone and the customer would only ever see the
+    // DSS number - and it was turned off on 2026-08-12 because she has no need
+    // to answer by text, and a relay line charges a real price for the option:
+    // *any* message from her phone to this number is sent onward to whichever
+    // customer wrote in last. A verification code she meant to forward to the
+    // office is the obvious way that goes wrong, and neither she nor the
+    // customer would ever know it had. Nothing on this line was worth that.
+    smsMode: 'notify',
     // Not registered yet, and the registration will be the WhatsApp Business
     // app on her own handset rather than the API - so this line stays false:
     // a number lives in the mobile app or on a BSP, never both, and nothing
