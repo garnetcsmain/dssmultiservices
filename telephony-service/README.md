@@ -370,9 +370,16 @@ remember.
 
 Two things about the DTMF press are worth keeping straight. Meta's Embedded
 Signup call is an IVR that reads nothing until a key is pressed, so the press
-is mandatory there. Intuit's call, and the WhatsApp app's, just dictate the
-code — the press is inert, and the 7-second wait costs the first reading of
-three. Both are env vars precisely because they are the robots' behaviour to
+is mandatory there, ~7s after answer. Intuit's call — and, going by it, the
+WhatsApp Business app's — just dictates the code, so the press is inert and the
+wait only costs readings.
+
+**Deployed value is `OTP_DTMF_DELAY_SECONDS=2`, not the 7 in the code.** The
+registration in flight is the mobile app, which dictates immediately; Intuit
+repeated three times and 7s still cost the first reading. The 450's Embedded
+Signup is long done, so nothing currently needs the longer wait. Put it back to
+7 before any Embedded Signup, where pressing too early may miss the prompt
+entirely. Both are env vars precisely because this is the robots' behaviour to
 change, not ours.
 
 Whisper writes a dictated code as `7 3 4 6 5 1`, with no six-digit run in it.
