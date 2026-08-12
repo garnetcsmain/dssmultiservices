@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rsync -an --itemize-changes:*)",
+      "Bash(rsync -a --delete --exclude='.env*' --exclude=node_modules --exclude=dist --exclude=dist-test --exclude=recordings --exclude=deadletter --exclude=models --exclude=media --exclude=.test-media --exclude=.git ./ fsulbaran@maple:~/dss-telephony/)",
+      "Bash(ssh fsulbaran@maple 'cd ~/dss-telephony && docker compose up -d --build')"
+    ]
+  }
+}

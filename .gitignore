@@ -3,3 +3,6 @@
 
 # Videos de formacion (NotebookLM) - demasiado pesados para git
 *.mp4
+
+# Configuracion local de Claude Code (especifica por maquina, no compartir)
+.claude/settings.local.json

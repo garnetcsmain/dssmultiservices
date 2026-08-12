@@ -1,0 +1,34 @@
+# Re: A&W QC
+
+- **Fecha:** Wed, 20 May 2020 17:10:09 -0400
+- **Buzón origen:** mcastro
+- **De:** davidr@qcmaintenance.com
+- **Para:** Isac.Couto@moderncanada.ca, mcastro@qcmaintenance.com, Nick.alevras@moderncanada.ca
+- **Categoría:** 02-correspondencia-clientes
+- **Confianza de coincidencia:** baja (revisar) (términos: n/a)
+- **Adjuntos (no extraídos):** IMG_3645.MOV, IMG_3649.MOV
+- **Archivo original:** `mcastro/gmail/2020/5/20/17233ec5fcaee07d.eml`
+
+---
+
+La décontamination du PETRO CANADA 4505 AVE DU PARC @AV DU MONT-ROYAL O,
+MONTRÉAL, QC H2V4E4
+<https://www.google.com/maps/search/4505+AVE+DU+PARC+@AV+DU+MONT-ROYAL+O,+MONTR%C3%89AL,+QC+H2V4E4?entry=gmail&source=g>
+  s’est très bien déroulée! Les zones indiqué ont été décontaminés très
+minutieusement avec le protocole de décontamination et prévention de la
+COVID-19.
+
+Je vous laisse ci-dessous quelques images et vidéos du travail acharné de
+notre équipe.
+
+PROJET:
+
+PETRO CANADA
+
+4505 AVE DU PARC @AV DU MONT-ROYAL O, MONTRÉAL, QC H2V4E4
+<https://www.google.com/maps/search/4505+AVE+DU+PARC+@AV+DU+MONT-ROYAL+O,+MONTR%C3%89AL,+QC+H2V4E4?entry=gmail&source=g>
+
+Cordialement David Salazar.
+
+El El mar, may. 19, 2020 a la(s) 10:53 p. m., Nick Alevras <
+Nick.Alevras@moderncanada.ca> escribió:

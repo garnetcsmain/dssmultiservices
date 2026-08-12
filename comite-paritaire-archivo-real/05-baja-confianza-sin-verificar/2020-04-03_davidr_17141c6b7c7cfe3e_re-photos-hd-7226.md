@@ -1,0 +1,27 @@
+# Re: Photos HD 7226
+
+- **Fecha:** Fri, 03 Apr 2020 16:41:13 -0400
+- **Buzón origen:** davidr
+- **De:** davidr@qcmaintenance.com
+- **Para:** Isac.Couto@moderncanada.ca, Jason.bougie@moderncanada.ca, mcastro@qcmaintenance.com
+- **Categoría:** 02-correspondencia-clientes
+- **Confianza de coincidencia:** baja (revisar) (términos: n/a)
+- **Adjuntos (no extraídos):** 37b0922f-80fe-4f46-84ca-16be899011aa.jpeg, 803B5BB3-AD24-4B47-B0E8-1F7F31315F2D.png, 0ae50277-68d4-4b00-b4f4-61e611cad0ec.jpeg, E1D1CAC5-F015-42F4-BC8E-E703090AFA75.png, 00BC76E1-DB7C-47F0-9EEC-565DC4550489.png, c6d3eb28-23eb-4830-8cf7-b0a97960a92b.jpeg, fcc3e7cb-37de-44d3-b557-f22113599a0d.jpeg, C7901B44-67ED-4D60-B1D2-55F509BB7904.png, 5c9cc189-044f-42c7-a68a-583405da7890.jpeg, 7f0a4a3d-fdb0-416c-9616-ea87cd99b1bf.jpeg, 0148aff6-0a74-498e-a352-8eba02c2a7ea.jpeg, 5bfa6511-3655-42bf-ba58-5155f70ae26e.jpeg, b2e9a682-13ce-4e55-b3c5-b9056147f656.jpeg, 2541F4A6-937E-4250-B543-8D7532A2A6D4.png, 439CFE1A-DEB9-45DC-A923-90E1B1294CBA.png, 846f28af-aced-43dd-8455-0aa39e1e420e.jpeg, c6d3eb28-23eb-4830-8cf7-b0a97960a92b.jpeg, 6FF95FD8-055C-4065-91ED-1F01250D40BB.png, D3BE2895-74AF-4795-8E59-7CA8C715B698.png
+- **Archivo original:** `davidr/gmail/2020/4/3/17141c6b7c7cfe3e.eml`
+
+---
+
+Bonjour à vous deux
+
+Voici quelque photos prises des travaux supplémentaires prises:
+
+Projet:
+HD 7226
+-4 employés X  4.75heures
+-1 chef d’équipe x 4.75 heures
+ TOTAL HEURES TRAVAILLÉ  = 23.75HEURES
+
+Merci beaucoup
+
+Le jeu. 2 avr. 2020 à 08:02, David Salazar <davidr@qcmaintenance.com> a
+écrit :

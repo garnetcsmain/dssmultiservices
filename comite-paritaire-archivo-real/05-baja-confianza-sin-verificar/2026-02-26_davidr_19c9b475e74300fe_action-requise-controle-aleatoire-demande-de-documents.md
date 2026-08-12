@@ -1,0 +1,14 @@
+# action requise : Contrôle aléatoire – Demande de documents
+
+- **Fecha:** Thu, 26 Feb 2026 13:47:34 -0500
+- **Buzón origen:** davidr
+- **De:** qc.conformite@qcmaintenance.com
+- **Para:** davidr@qcmaintenance.com, jsalazar@qcmaintenance.com
+- **Categoría:** 03-conversaciones-internas
+- **Confianza de coincidencia:** baja (revisar) (términos: n/a)
+- **Adjuntos (no extraídos):** Qc.maladie.pdf
+- **Archivo original:** `davidr/gmail/2026/2/26/19c9b475e74300fe.eml`
+
+---
+
+(cuerpo vacío o no extraíble; ver adjuntos u original)

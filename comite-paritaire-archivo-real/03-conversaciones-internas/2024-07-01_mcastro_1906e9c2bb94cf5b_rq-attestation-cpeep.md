@@ -1,0 +1,13 @@
+# RQ ATTESTATION / CPEEP
+
+- **Fecha:** Mon, 01 Jul 2024 10:03:56 -0400
+- **Buzón origen:** mcastro
+- **De:** mcastro@qcmaintenance.com
+- **Para:** cvasquez@qcmaintenance.com
+- **Categoría:** 03-conversaciones-internas
+- **Confianza de coincidencia:** alta (términos: cpeep)
+- **Archivo original:** `mcastro/gmail/2024/7/1/1906e9c2bb94cf5b.eml`
+
+---
+
+(cuerpo vacío o no extraíble; ver adjuntos u original)

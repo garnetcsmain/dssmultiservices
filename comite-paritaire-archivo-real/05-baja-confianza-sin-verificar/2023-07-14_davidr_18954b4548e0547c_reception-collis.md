@@ -1,0 +1,28 @@
+# Réception collis 
+
+- **Fecha:** Fri, 14 Jul 2023 10:00:21 -0400
+- **Buzón origen:** davidr
+- **De:** davidr@qcmaintenance.com
+- **Para:** Tommy.benoit@garda.com
+- **CC:** mcastro@qcmaintenance.com
+- **Categoría:** 02-correspondencia-clientes
+- **Confianza de coincidencia:** baja (revisar) (términos: n/a)
+- **Archivo original:** `davidr/gmail/2023/7/14/18954b4548e0547c.eml`
+
+---
+
+Bonjour
+
+Voici les informations pour qu’on puisse chercher la commande cet avant midi.
+
+Merci bcp
+
+Marque et Modèle :
+Rolls Royce Cullinan
+
+Plaques:
+FSY 1917
+
+Personne responsable du livraison:
+David Salazar
+Cel: 514.463.7712

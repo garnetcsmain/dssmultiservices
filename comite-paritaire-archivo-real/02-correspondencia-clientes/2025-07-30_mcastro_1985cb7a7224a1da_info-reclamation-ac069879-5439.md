@@ -1,0 +1,68 @@
+# [info] Réclamation AC069879  # 5439
+
+- **Fecha:** Wed, 30 Jul 2025 19:03:14 +0000
+- **Buzón origen:** mcastro
+- **De:** notifications@app.titanfile.com
+- **Para:** info@qcmaintenance.com
+- **Categoría:** 02-correspondencia-clientes
+- **Confianza de coincidencia:** alta (términos: cpeep, titanfile)
+- **Archivo original:** `mcastro/gmail/2025/7/30/1985cb7a7224a1da.eml`
+
+---
+
+|  |  |  |
+---|---
+|  [
+![Logo](https://cpeep.titanfile.com/media/generated-2023-09-24/public/logo/svBR3x-branding-
+small-1724197588.png) ](
+
+https://cpeep.titanfile.com/channels/wzYsUj/64c5dc6a-1d4e-47b3-8686-4f2c50a67595/
+
+) |
+---|---
+|
+[![](https://cpeep.titanfile.com/user/initials_avatar_svg/6d9959de-5157-4e8f-bd52-c83e37dbfca1/large/email/)](https://cpeep.titanfile.com/channels/wzYsUj/64c5dc6a-1d4e-47b3-8686-4f2c50a67595/)
+|
+---|---
+|
+
+Celine Arseneault
+
+vous a envoyé 1 fichier
+
+|
+---|---
+|
+
+Le message a été masqué pour des raisons de sécurité.
+
+|
+---|---
+|  |
+---|---
+|  |  [Accéder aux
+fichiers](https://cpeep.titanfile.com/channels/wzYsUj/64c5dc6a-1d4e-47b3-8686-4f2c50a67595/?lang=fr)
+---
+|  |
+---|---
+|  |
+---|---
+|  |
+
+Expire le 30-07-2026
+
+Copier et coller le lien pour accéder directement à « Réclamation AC069879 #
+5439 » : https://cpeep.titanfile.com/channels/wzYsUj/?lang=fr
+
+Ce message a été envoyé à info@qcmaintenance.com.
+
+Changer mes [paramètres de
+notification](https://cpeep.titanfile.com/options/notifications/?lang=fr).
+
+© [TitanFile Inc.](https://www.titanfile.com "TitanFile Inc."), 2025. 1050,
+rue King Ouest, Toronto (Ontario) Canada M6K 0C7
+
+Numéro sans frais : 1 855 315-6012
+
+|
+---|---

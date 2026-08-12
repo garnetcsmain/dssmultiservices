@@ -1,0 +1,16 @@
+# 1 - 15 marzo
+
+- **Fecha:** Mon, 06 May 2024 10:36:18 -0400
+- **Buzón origen:** cvasquez
+- **De:** jbelnavis@qcmaintenance.com
+- **Para:** pay@qcmaintenance.com
+- **CC:** srobledo@qcmaintenance.com, cvasquez@qcmaintenance.com
+- **Categoría:** 03-conversaciones-internas
+- **Confianza de coincidencia:** baja (revisar) (términos: n/a)
+- **Adjuntos (no extraídos):** CGL 3-9 mars 2024.pdf, CGL semaine du 25 février au 2 mars 2024.pdf, CGL 9-10 mars 2024 annoté.pdf, CGL 10-16 mars 2024 annoté.pdf, George-Phaneuf 3-9 mars 2024.pdf, George-Phaneuf 10-16 mars 2024.pdf, George-Phaneuf 25 février-2 mars 2024.pdf, Qc Maintenance_10 au 16 mars 2024_Champagnat_764440.pdf, 3 au 9 mars 2024 Champagnat.pdf, Qc Maintenance_25 février au 2 mars 2024_Champagnat_764440.pdf, HHaut Richelieu 25 Fev- 2 Mars 2024.PDF, Hopital Haut Richelieu sem. 3 au 9 Mars.PDF, Hopital Haut Richelieu 10 au 16 Mars.pdf, MDA- Feuilles de présences semaine du 3 au 9 mars 2024.pdf, MDA - Feuilles de présences semaine du 10 au 16 mars 2024.pdf, Qc Maintenance_Sainte-Croix_semaine du 3 au 9 mars 2024_764450 et 764411.pdf, Qc Maintenance_Sainte-Croix_semaine du 25 février au 2 mars 2024_764450 et 764411.pdf, Sainte-Croix semaine du 10 au 16 mars.pdf, Val Joli 25 - 2 Mars.pdf, Qc Maintenance_Val-Joli_semaine du 3 au 9 mars 2024_764460.pdf
+- **Archivo original:** `cvasquez/gmail/2024/5/6/18f4e55edd0a0aec.eml`
+
+---
+
+Superviseur QC Maintenance
+Cellulaire :438-881-3692
