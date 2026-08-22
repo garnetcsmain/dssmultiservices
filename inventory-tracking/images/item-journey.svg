@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 560" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1180" height="560" fill="#ffffff"/>
+  <text x="590" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1f2328">The life of one machine — from storage to the job and back</text>
+
+  <!-- Station 1: Storage -->
+  <g>
+    <rect x="30" y="70" width="200" height="150" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+    <path d="M 90 118 L 130 92 L 170 118 L 170 150 L 90 150 Z" fill="#ffffff" stroke="#0969da" stroke-width="2"/>
+    <rect x="120" y="128" width="20" height="22" fill="#0969da"/>
+    <text x="130" y="172" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2328">3084 Storage</text>
+    <text x="130" y="192" text-anchor="middle" font-size="12" fill="#57606a">Every item has a home shelf</text>
+    <text x="130" y="208" text-anchor="middle" font-size="12" fill="#57606a">and a waterproof NFC sticker</text>
+  </g>
+
+  <!-- Checkpoint 1 -->
+  <line x1="230" y1="145" x2="290" y2="145" stroke="#57606a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <rect x="234" y="96" width="54" height="26" rx="13" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+  <text x="261" y="113" text-anchor="middle" font-size="12" font-weight="600" fill="#9a6700">TAP 1</text>
+
+  <!-- Station 2: Vehicle -->
+  <g>
+    <rect x="295" y="70" width="200" height="150" rx="12" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+    <rect x="330" y="105" width="90" height="40" rx="6" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+    <path d="M 420 145 L 420 118 L 448 118 L 462 132 L 462 145 Z" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+    <circle cx="350" cy="150" r="9" fill="#1f2328"/>
+    <circle cx="440" cy="150" r="9" fill="#1f2328"/>
+    <text x="395" y="180" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2328">Van of X / Trailer</text>
+    <text x="395" y="200" text-anchor="middle" font-size="12" fill="#57606a">Tap the tag on the door frame:</text>
+    <text x="395" y="215" text-anchor="middle" font-size="12" fill="#57606a">machine is now CHECKED OUT</text>
+  </g>
+
+  <!-- Checkpoint 2 -->
+  <line x1="495" y1="145" x2="555" y2="145" stroke="#57606a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <rect x="497" y="96" width="56" height="26" rx="13" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+  <text x="525" y="113" text-anchor="middle" font-size="12" font-weight="600" fill="#9a6700">DRIVE</text>
+
+  <!-- Station 3: Job site -->
+  <g>
+    <rect x="560" y="70" width="200" height="150" rx="12" fill="#fff1e5" stroke="#bc4c00" stroke-width="2"/>
+    <rect x="610" y="95" width="100" height="60" fill="#ffffff" stroke="#bc4c00" stroke-width="2"/>
+    <rect x="622" y="105" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <rect x="652" y="105" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <rect x="682" y="105" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <rect x="622" y="128" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <rect x="652" y="128" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <rect x="682" y="128" width="16" height="14" fill="#bc4c00" opacity="0.5"/>
+    <text x="660" y="180" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2328">Job site</text>
+    <text x="660" y="200" text-anchor="middle" font-size="12" fill="#57606a">JOB IN PROGRESS —</text>
+    <text x="660" y="215" text-anchor="middle" font-size="12" fill="#57606a">location saved from the phone GPS</text>
+  </g>
+
+  <!-- Checkpoint 3: packing -->
+  <line x1="760" y1="145" x2="820" y2="145" stroke="#57606a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <rect x="762" y="96" width="56" height="26" rx="13" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+  <text x="790" y="113" text-anchor="middle" font-size="12" font-weight="600" fill="#9a6700">TAP 2</text>
+
+  <!-- Station 4: Packing check -->
+  <g>
+    <rect x="825" y="70" width="200" height="150" rx="12" fill="#fbefff" stroke="#8250df" stroke-width="2"/>
+    <rect x="875" y="92" width="100" height="66" rx="8" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+    <text x="892" y="112" font-size="13" fill="#1a7f37" font-weight="700">&#10003; Vacuum #3</text>
+    <text x="892" y="130" font-size="13" fill="#1a7f37" font-weight="700">&#10003; Mop cart</text>
+    <text x="892" y="148" font-size="13" fill="#cf222e" font-weight="700">&#10007; Extension cord!</text>
+    <text x="925" y="180" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2328">Packing check</text>
+    <text x="925" y="200" text-anchor="middle" font-size="12" fill="#57606a">Back at the vehicle, the bot compares</text>
+    <text x="925" y="215" text-anchor="middle" font-size="12" fill="#57606a">what left vs. what came back</text>
+  </g>
+
+  <!-- Return arrow to storage -->
+  <line x1="1025" y1="145" x2="1085" y2="145" stroke="#57606a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="1088" y="95" width="72" height="100" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+    <path d="M 1104 135 L 1124 121 L 1144 135 L 1144 152 L 1104 152 Z" fill="#ffffff" stroke="#0969da" stroke-width="2"/>
+    <text x="1124" y="172" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2328">Back</text>
+    <text x="1124" y="186" text-anchor="middle" font-size="12" font-weight="700" fill="#1f2328">home &#10003;</text>
+  </g>
+
+  <!-- Telegram bubbles -->
+  <text x="590" y="278" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2328">…and what Telegram says at each step</text>
+
+  <!-- Bubble 1: checkout alert to Freddy -->
+  <g>
+    <line x1="395" y1="222" x2="300" y2="310" stroke="#0969da" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrowBlue)"/>
+    <rect x="60" y="315" width="480" height="105" rx="14" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+    <circle cx="95" cy="345" r="16" fill="#0969da"/>
+    <text x="95" y="351" text-anchor="middle" font-size="14" fill="#ffffff" font-weight="700">DSS</text>
+    <text x="125" y="340" font-size="13" font-weight="700" fill="#1f2328">To Freddy:</text>
+    <text x="125" y="360" font-size="13" fill="#1f2328">&#8220;Vacuum #3 + Mop cart left 3084 Storage &#8594; Van of X (7:42)&#8221;</text>
+    <rect x="125" y="374" width="90" height="26" rx="13" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="170" y="391" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">Maria</text>
+    <rect x="223" y="374" width="90" height="26" rx="13" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="268" y="391" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">John</text>
+    <rect x="321" y="374" width="90" height="26" rx="13" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="366" y="391" text-anchor="middle" font-size="12" font-weight="600" fill="#0969da">Me (Freddy)</text>
+    <text x="125" y="414" font-size="11" fill="#57606a">one tap assigns the responsible person — saved forever in the history</text>
+  </g>
+
+  <!-- Bubble 2: packing check to employee -->
+  <g>
+    <line x1="925" y1="222" x2="880" y2="310" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrowBlue)"/>
+    <rect x="620" y="315" width="500" height="105" rx="14" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+    <circle cx="655" cy="345" r="16" fill="#8250df"/>
+    <text x="655" y="351" text-anchor="middle" font-size="14" fill="#ffffff" font-weight="700">DSS</text>
+    <text x="685" y="340" font-size="13" font-weight="700" fill="#1f2328">To Maria (the responsible):</text>
+    <text x="685" y="360" font-size="13" fill="#1f2328">&#8220;Leaving the job? You arrived with 5 items, 4 are back.&#8221;</text>
+    <text x="685" y="380" font-size="13" font-weight="700" fill="#cf222e">&#8220;Missing: extension cord 25m &#8212; please check before driving!&#8221;</text>
+    <rect x="685" y="390" width="120" height="24" rx="12" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="745" y="406" text-anchor="middle" font-size="12" font-weight="600" fill="#1a7f37">Found it &#10003;</text>
+    <rect x="815" y="390" width="150" height="24" rx="12" fill="#ffebe9" stroke="#cf222e"/>
+    <text x="890" y="406" text-anchor="middle" font-size="12" font-weight="600" fill="#cf222e">Report lost &#10007;</text>
+  </g>
+
+  <!-- Footer summary -->
+  <rect x="60" y="450" width="1060" height="80" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
+  <text x="590" y="482" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2328">The whole trick in one sentence</text>
+  <text x="590" y="506" text-anchor="middle" font-size="13" fill="#1f2328">Every item wears a cheap sticker with a unique ID. Every time it crosses a door, that ID gets read.</text>
+  <text x="590" y="524" text-anchor="middle" font-size="13" fill="#1f2328">Compare the lists between doors, and you always know where everything is — and what is missing.</text>
+</svg>
