@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 620" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="tp-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1080" height="620" fill="#ffffff"/>
+  <text x="540" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1f2328">Where the tag goes — one machine, four options</text>
+  <text x="540" y="60" text-anchor="middle" font-size="13" fill="#57606a">Rule of thumb: flat, dry-ish, easy to tap with a phone, away from the floor and away from bare metal when possible</text>
+
+  <!-- Machine drawing: a floor scrubber-ish machine -->
+  <g>
+    <!-- body -->
+    <path d="M 330 430 Q 330 330 420 320 L 560 320 Q 640 330 640 430 Z" fill="#f6f8fa" stroke="#57606a" stroke-width="3"/>
+    <!-- tank top -->
+    <rect x="395" y="270" width="180" height="60" rx="14" fill="#e7ecf0" stroke="#57606a" stroke-width="3"/>
+    <!-- handle -->
+    <path d="M 585 300 L 680 150 L 740 150" fill="none" stroke="#57606a" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 740 150 L 740 190" fill="none" stroke="#57606a" stroke-width="8" stroke-linecap="round"/>
+    <!-- wheels -->
+    <circle cx="400" cy="440" r="34" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
+    <circle cx="400" cy="440" r="12" fill="#d0d7de"/>
+    <circle cx="580" cy="440" r="34" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
+    <circle cx="580" cy="440" r="12" fill="#d0d7de"/>
+    <!-- brush deck -->
+    <rect x="330" y="470" width="180" height="22" rx="10" fill="#e7ecf0" stroke="#57606a" stroke-width="3"/>
+
+    <!-- A: sticker on plastic tank -->
+    <rect x="425" y="283" width="56" height="34" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="2.5"/>
+    <circle cx="443" cy="300" r="8" fill="none" stroke="#0969da" stroke-width="2"/>
+    <circle cx="443" cy="300" r="3.5" fill="none" stroke="#0969da" stroke-width="2"/>
+    <rect x="456" y="292" width="18" height="16" fill="#0969da" opacity="0.85"/>
+    <text x="453" y="336" text-anchor="middle" font-size="14" font-weight="800" fill="#0969da">A</text>
+
+    <!-- B: on-metal tag on body -->
+    <rect x="360" y="370" width="54" height="34" rx="8" fill="#fff1e5" stroke="#bc4c00" stroke-width="2.5"/>
+    <circle cx="387" cy="387" r="9" fill="none" stroke="#bc4c00" stroke-width="2"/>
+    <circle cx="387" cy="387" r="4" fill="none" stroke="#bc4c00" stroke-width="2"/>
+    <text x="387" y="424" text-anchor="middle" font-size="14" font-weight="800" fill="#bc4c00">B</text>
+
+    <!-- C: keyfob on handle -->
+    <circle cx="672" cy="196" r="17" fill="#dafbe1" stroke="#1a7f37" stroke-width="2.5"/>
+    <circle cx="672" cy="184" r="4" fill="none" stroke="#1a7f37" stroke-width="2"/>
+    <text x="700" y="201" font-size="14" font-weight="800" fill="#1a7f37">C</text>
+
+    <!-- D: airtag pocket under tank -->
+    <circle cx="545" cy="352" r="14" fill="#fbefff" stroke="#8250df" stroke-width="2.5"/>
+    <circle cx="545" cy="352" r="6" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+    <text x="545" y="384" text-anchor="middle" font-size="14" font-weight="800" fill="#8250df">D</text>
+  </g>
+
+  <!-- Legend cards -->
+  <g>
+    <rect x="40" y="90" width="250" height="130" rx="12" fill="#ffffff" stroke="#0969da" stroke-width="2"/>
+    <text x="60" y="118" font-size="15" font-weight="800" fill="#0969da">A · NFC sticker + QR</text>
+    <text x="60" y="140" font-size="12" fill="#1f2328">The default. Waterproof laminated</text>
+    <text x="60" y="156" font-size="12" fill="#1f2328">NTAG216 sticker (~$0.30–0.60) on a</text>
+    <text x="60" y="172" font-size="12" fill="#1f2328">flat PLASTIC surface. Printed name +</text>
+    <text x="60" y="188" font-size="12" fill="#1f2328">QR code on the same label, so any</text>
+    <text x="60" y="204" font-size="12" fill="#1f2328">camera can also identify it.</text>
+    <line x1="290" y1="155" x2="425" y2="290" stroke="#0969da" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </g>
+  <g>
+    <rect x="40" y="250" width="250" height="130" rx="12" fill="#ffffff" stroke="#bc4c00" stroke-width="2"/>
+    <text x="60" y="278" font-size="15" font-weight="800" fill="#bc4c00">B · On-metal NFC tag</text>
+    <text x="60" y="300" font-size="12" fill="#1f2328">Metal kills normal NFC stickers.</text>
+    <text x="60" y="316" font-size="12" fill="#1f2328">For metal bodies use an &#8220;on-metal&#8221;</text>
+    <text x="60" y="332" font-size="12" fill="#1f2328">tag with a ferrite backing (~$1–2).</text>
+    <text x="60" y="348" font-size="12" fill="#1f2328">Same tap experience, built to sit</text>
+    <text x="60" y="364" font-size="12" fill="#1f2328">on steel.</text>
+    <line x1="290" y1="315" x2="360" y2="380" stroke="#bc4c00" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </g>
+  <g>
+    <rect x="790" y="90" width="250" height="130" rx="12" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+    <text x="810" y="118" font-size="15" font-weight="800" fill="#1a7f37">C · Zip-tie fob</text>
+    <text x="810" y="140" font-size="12" fill="#1f2328">For hoses, cords, carts, anything</text>
+    <text x="810" y="156" font-size="12" fill="#1f2328">without a good flat spot: epoxy</text>
+    <text x="810" y="172" font-size="12" fill="#1f2328">NFC keyfob (~$0.50) zip-tied on.</text>
+    <text x="810" y="188" font-size="12" fill="#1f2328">Survives water, mud and being</text>
+    <text x="810" y="204" font-size="12" fill="#1f2328">thrown in the van.</text>
+    <line x1="790" y1="160" x2="692" y2="192" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </g>
+  <g>
+    <rect x="790" y="250" width="250" height="146" rx="12" fill="#ffffff" stroke="#8250df" stroke-width="2"/>
+    <text x="810" y="278" font-size="15" font-weight="800" fill="#8250df">D · AirTag (expensive gear)</text>
+    <text x="810" y="300" font-size="12" fill="#1f2328">Later, for the few machines worth</text>
+    <text x="810" y="316" font-size="12" fill="#1f2328">$1000+: an AirTag (~$39) in a</text>
+    <text x="810" y="332" font-size="12" fill="#1f2328">screw-down waterproof mount,</text>
+    <text x="810" y="348" font-size="12" fill="#1f2328">hidden inside a compartment.</text>
+    <text x="810" y="364" font-size="12" fill="#1f2328">Finds gear that actually walks</text>
+    <text x="810" y="380" font-size="12" fill="#1f2328">away. Not needed for the system.</text>
+    <line x1="790" y1="320" x2="559" y2="352" stroke="#8250df" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </g>
+
+  <!-- Bottom tips -->
+  <rect x="40" y="520" width="1000" height="80" rx="12" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="60" y="548" font-size="14" font-weight="700" fill="#1f2328">Placement tips</text>
+  <text x="60" y="570" font-size="12.5" fill="#1f2328">&#8226; Same spot on every machine of the same type, so nobody hunts for the tag &#8226; clean with alcohol before sticking &#8226; add a strip of clear Gorilla tape over stickers in rough spots</text>
+  <text x="60" y="588" font-size="12.5" fill="#1f2328">&#8226; Keep tags off the floor side (water, impacts) &#8226; write the item number with paint marker too — the human-readable backup when everything else fails</text>
+</svg>
