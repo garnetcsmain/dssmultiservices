@@ -52,6 +52,7 @@ AirTags slot in at the end for the most expensive machines only.
 | [docs/05-roadmap.md](docs/05-roadmap.md) | The build plan, phase by phase, with effort, gates and what can go wrong |
 | [docs/06-open-questions-and-risks.md](docs/06-open-questions-and-risks.md) | **Answer before ordering hardware.** 20 questions + the honest risk list (Quebec winter included) |
 | [docs/07-sources.md](docs/07-sources.md) | All research sources: datasheets, price pages, standards, API docs |
+| [notebooklm/](notebooklm/) | **Spanish NotebookLM package**: one source doc per solution + a ready podcast script (guion) + usage instructions |
 
 ## The system at a glance
 
