@@ -1,0 +1,16 @@
+date,heures_lues_sur_le_scan,heures_du_registre_QC,document,confiance_lecture,resultat
+2025-01-04,28.00,207.00,PLACE BELL JANVIER..pdf,haute,1 formulaire pour une journée à plusieurs équipes
+2025-01-05,66.00,66.00,PLACE BELL JANVIER..pdf,haute,CONCORDE
+2025-01-06,36.00,36.00,PLACE BELL JANVIER..pdf,moyenne,CONCORDE
+2025-01-08,9.00,9.00,PLACE BELL JANVIER..pdf,haute,CONCORDE
+2025-01-09,133.83,134.83,PLACE BELL JANVIER..pdf,moyenne,"écart 1,00 h"
+2025-01-10,202.50,280.00,PLACE BELL JANVIER..pdf,haute,formulaire partiel
+2025-01-11,44.00,356.50,PLACE BELL JANVIER..pdf,moyenne,formulaire partiel
+2025-01-12,225.50,427.00,PLACE BELL JANVIER..pdf,moyenne,formulaire partiel
+2025-01-13,85.00,85.00,PLACE BELL JANVIER..pdf + Feuilles de temps PLACE BELL - JAN,haute,CONCORDE
+2025-01-14,9.50,9.50,PLACE BELL JANVIER..pdf,haute,CONCORDE
+2025-01-18,168.25,168.25,Feuilles de temps du PLACE BELL - JAN.pdf,moyenne,CONCORDE
+2025-04-10,88.00,163.25,Feuilles de temps du PLACE BELL (01 au 30 avril 2025).pdf,haute,formulaire manutention seul
+2025-04-11,88.75,140.75,Feuilles de temps du PLACE BELL (01 au 30 avril 2025).pdf,haute,formulaire partiel
+2025-04-16,224.50,225.17,Feuilles de temps du PLACE BELL (01 au 30 avril 2025).pdf,moyenne,"écart 0,67 h"
+2025-10-21,102.10,188.20,21 oct - Place Bell.pdf,moyenne,"formulaire partiel; 3 des 13 employés réclamés (19,43 h)"
