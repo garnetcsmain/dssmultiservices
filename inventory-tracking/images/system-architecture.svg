@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 780" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1080" height="780" fill="#ffffff"/>
+  <text x="540" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1f2328">DSS inventory system — the four layers</text>
+
+  <!-- LAYER 1: THINGS -->
+  <rect x="40" y="60" width="1000" height="150" rx="14" fill="#fff1e5" stroke="#bc4c00" stroke-width="2"/>
+  <text x="60" y="88" font-size="15" font-weight="700" fill="#bc4c00">1 · THE THINGS — every item wears a cheap ID</text>
+
+  <g>
+    <rect x="70" y="105" width="220" height="88" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="88" y="122" width="44" height="54" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <circle cx="110" cy="140" r="10" fill="none" stroke="#bc4c00" stroke-width="2.5"/>
+    <circle cx="110" cy="140" r="5" fill="none" stroke="#bc4c00" stroke-width="2"/>
+    <text x="148" y="132" font-size="13" font-weight="700" fill="#1f2328">Machines &amp; tools</text>
+    <text x="148" y="150" font-size="12" fill="#57606a">waterproof NFC sticker</text>
+    <text x="148" y="166" font-size="12" fill="#57606a">~$0.30–1 each, slim,</text>
+    <text x="148" y="182" font-size="12" fill="#57606a">no battery, lasts years</text>
+  </g>
+  <g>
+    <rect x="310" y="105" width="220" height="88" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="328" y="125" width="40" height="48" rx="4" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <rect x="334" y="131" width="28" height="28" fill="#1f2328" opacity="0.85"/>
+    <rect x="338" y="135" width="8" height="8" fill="#ffffff"/>
+    <rect x="350" y="135" width="8" height="8" fill="#ffffff"/>
+    <rect x="338" y="147" width="8" height="8" fill="#ffffff"/>
+    <text x="386" y="132" font-size="13" font-weight="700" fill="#1f2328">QR label backup</text>
+    <text x="386" y="150" font-size="12" fill="#57606a">printed on the same</text>
+    <text x="386" y="166" font-size="12" fill="#57606a">laminated label — scan</text>
+    <text x="386" y="182" font-size="12" fill="#57606a">when NFC can&#8217;t be read</text>
+  </g>
+  <g>
+    <rect x="550" y="105" width="220" height="88" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <circle cx="600" cy="148" r="22" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <circle cx="600" cy="148" r="9" fill="#ffffff" stroke="#57606a" stroke-width="2"/>
+    <text x="640" y="132" font-size="13" font-weight="700" fill="#1f2328">AirTag (future)</text>
+    <text x="640" y="150" font-size="12" fill="#57606a">only for expensive</text>
+    <text x="640" y="166" font-size="12" fill="#57606a">machines — finds gear</text>
+    <text x="640" y="182" font-size="12" fill="#57606a">that truly disappears</text>
+  </g>
+  <g>
+    <rect x="790" y="105" width="230" height="88" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <path d="M 815 175 L 815 135 Q 815 125 825 125 L 850 125 Q 860 125 860 135 L 860 175 Z" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <rect x="808" y="172" width="60" height="8" rx="3" fill="#57606a"/>
+    <text x="880" y="132" font-size="13" font-weight="700" fill="#1f2328">Supplies (bins)</text>
+    <text x="880" y="150" font-size="12" fill="#57606a">consumables tracked</text>
+    <text x="880" y="166" font-size="12" fill="#57606a">per-bin, not per-bottle</text>
+    <text x="880" y="182" font-size="12" fill="#57606a">(tag the bin, count refills)</text>
+  </g>
+
+  <line x1="540" y1="210" x2="540" y2="240" stroke="#57606a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="556" y="232" font-size="12" fill="#57606a">tap / scan</text>
+
+  <!-- LAYER 2: READERS -->
+  <rect x="40" y="245" width="1000" height="150" rx="14" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+  <text x="60" y="273" font-size="15" font-weight="700" fill="#9a6700">2 · THE READERS — phones today, little boxes tomorrow</text>
+  <g>
+    <rect x="70" y="290" width="450" height="88" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="95" y="302" width="36" height="64" rx="8" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <rect x="101" y="310" width="24" height="42" fill="#ddf4ff"/>
+    <circle cx="113" cy="360" r="3.5" fill="#57606a"/>
+    <text x="150" y="315" font-size="13" font-weight="700" fill="#1f2328">Employee&#8217;s own phone (Phase 1 — $0)</text>
+    <text x="150" y="334" font-size="12" fill="#57606a">Tap the sticker &#8594; link opens &#8594; one button confirms.</text>
+    <text x="150" y="350" font-size="12" fill="#57606a">The phone adds WHO (their Telegram) and WHERE (GPS).</text>
+    <text x="150" y="366" font-size="12" fill="#57606a">No app to install — NFC tap opens a web/Telegram link.</text>
+  </g>
+  <g>
+    <rect x="545" y="290" width="475" height="88" rx="10" fill="#ffffff" stroke="#d0d7de" stroke-dasharray="6,4"/>
+    <rect x="570" y="308" width="52" height="36" rx="6" fill="#f6f8fa" stroke="#57606a" stroke-width="2"/>
+    <circle cx="583" cy="326" r="4" fill="#1a7f37"/>
+    <path d="M 596 318 q 10 8 0 16 M 604 314 q 16 12 0 24" fill="none" stroke="#57606a" stroke-width="2"/>
+    <text x="640" y="315" font-size="13" font-weight="700" fill="#1f2328">Fixed scanners (Phase 3+, optional)</text>
+    <text x="640" y="334" font-size="12" fill="#57606a">ESP32 boxes (~$10) in storage / van / trailer that hear</text>
+    <text x="640" y="350" font-size="12" fill="#57606a">BLE tags automatically — no tap needed. Added later,</text>
+    <text x="640" y="366" font-size="12" fill="#57606a">same backend; taps become the backup path.</text>
+  </g>
+
+  <line x1="540" y1="395" x2="540" y2="425" stroke="#57606a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="556" y="417" font-size="12" fill="#57606a">HTTPS (Tailscale Funnel)</text>
+
+  <!-- LAYER 3: BRAIN -->
+  <rect x="40" y="430" width="1000" height="160" rx="14" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+  <text x="60" y="458" font-size="15" font-weight="700" fill="#0969da">3 · THE BRAIN — &#8220;maple&#8221; home server (already running today)</text>
+  <g>
+    <rect x="70" y="475" width="300" height="98" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="90" y="500" font-size="13" font-weight="700" fill="#1f2328">dss-inventory service (new)</text>
+    <text x="90" y="519" font-size="12" fill="#57606a">TypeScript + SQLite, Docker container</text>
+    <text x="90" y="535" font-size="12" fill="#57606a">&#8226; item registry &amp; states &#8226; event history</text>
+    <text x="90" y="551" font-size="12" fill="#57606a">&#8226; packing-check logic &#8226; nightly GCS backup</text>
+    <text x="90" y="567" font-size="12" fill="#57606a">same house style as dss-telephony</text>
+  </g>
+  <g>
+    <rect x="390" y="475" width="300" height="98" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="410" y="500" font-size="13" font-weight="700" fill="#1f2328">n8n (already installed)</text>
+    <text x="410" y="519" font-size="12" fill="#57606a">Runs the Telegram bot conversations:</text>
+    <text x="410" y="535" font-size="12" fill="#57606a">&#8226; alerts to Freddy &#8226; assign buttons</text>
+    <text x="410" y="551" font-size="12" fill="#57606a">&#8226; employee checklists &#8226; reminders</text>
+    <text x="410" y="567" font-size="12" fill="#57606a">no custom bot code needed to start</text>
+  </g>
+  <g>
+    <rect x="710" y="475" width="310" height="98" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="730" y="500" font-size="13" font-weight="700" fill="#1f2328">Dashboard page</text>
+    <text x="730" y="519" font-size="12" fill="#57606a">Simple web page (like the DSS site):</text>
+    <text x="730" y="535" font-size="12" fill="#57606a">&#8226; where is everything right now</text>
+    <text x="730" y="551" font-size="12" fill="#57606a">&#8226; who has what &#8226; loss/late report</text>
+    <text x="730" y="567" font-size="12" fill="#57606a">&#8226; print new labels</text>
+  </g>
+
+  <line x1="540" y1="590" x2="540" y2="620" stroke="#57606a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="556" y="612" font-size="12" fill="#57606a">Telegram Bot API</text>
+
+  <!-- LAYER 4: PEOPLE -->
+  <rect x="40" y="625" width="1000" height="130" rx="14" fill="#dafbe1" stroke="#1a7f37" stroke-width="2"/>
+  <text x="60" y="653" font-size="15" font-weight="700" fill="#1a7f37">4 · THE PEOPLE — everything ends in Telegram</text>
+  <g>
+    <rect x="70" y="668" width="450" height="72" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <circle cx="105" cy="704" r="18" fill="#0969da"/>
+    <text x="105" y="710" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="700">F</text>
+    <text x="138" y="694" font-size="13" font-weight="700" fill="#1f2328">Freddy — the boss view</text>
+    <text x="138" y="712" font-size="12" fill="#57606a">checkout alerts &#8226; assign-responsible buttons &#8226;</text>
+    <text x="138" y="728" font-size="12" fill="#57606a">missing-item and &#8220;not returned in N days&#8221; alerts</text>
+  </g>
+  <g>
+    <rect x="545" y="668" width="475" height="72" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <circle cx="580" cy="704" r="18" fill="#8250df"/>
+    <text x="580" y="710" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="700">M</text>
+    <text x="613" y="694" font-size="13" font-weight="700" fill="#1f2328">Employees — their checklist view</text>
+    <text x="613" y="712" font-size="12" fill="#57606a">&#8220;you are responsible for these 5 items&#8221; &#8226; packing check when</text>
+    <text x="613" y="728" font-size="12" fill="#57606a">leaving a job &#8226; one-tap &#8220;found it / report problem&#8221;</text>
+  </g>
+</svg>
