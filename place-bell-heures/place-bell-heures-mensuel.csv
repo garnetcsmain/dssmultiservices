@@ -1,0 +1,20 @@
+mois,heures_enregistrees_par_QC,source_QC,heures_facturees_a_GDI,no_facture,montant_pre_taxes_$,ecart_QC_moins_facture,note
+2024-12,,aucun registre QC dans la fenêtre,1700.75,#6193 (3 OM),49322.68,,"hors période demandée, donné pour continuité"
+2025-01,3713.98,PLACE BELL Mod- Janvier 2025.xlsx,3394.00,#6418 (2 OM),97791.90,+319.98,
+2025-02,2102.79,"Place BELL- Fevrier 2025.xlsx + Complément 15 fév (16,67 h)",2245.55,#6567 (3 OM),61124.19,-142.76,GDI a facturé plus que le relevé QC
+2025-03,3399.20,PLACE BELL- Mars 2025.xlsx,3242.25,#6738 (2 OM),90605.28,+156.95,
+2025-04,2107.78,PLACE BELL Avril - 2025.xlsx,2073.70,#6894 (4 OM),54804.68,+34.08,
+2025-05,3159.42,PLACE BELL- Mai 2025.xlsx,2974.25,#7043 (4 OM),82000.21,+185.17,
+2025-06,1437.25,Place Bell- Juin 2025.xlsx,1306.25,#7225 (OM),34305.38,+131.00,
+2025-07,178.85,PLACE BELL- Juillet 2025.xlsx (1 seule journée: 13 juil.),95.50,#7397 (3 OM),2866.91,+83.35,arrêt estival réel; facture sans ligne manutention ni supervision
+2025-08,,AUCUN registre QC — QC a demandé le détail à GDI,796.75,#7500 (OM),20501.24,,"confirmé par 5 extraits GDI indépendants; +4,00 h tracées non enregistrées"
+2025-09,1286.22,PLACE BELL - SEPTEMBRE 2025 (1).xlsx,1255.50,#7621 (OM),32608.34,+30.72,
+2025-10,2142.78,PLACE BELL - OCTOBRE 2025.xlsx,2000.20,#7783 (OM),54525.76,+142.58,facture sans ligne supervision
+2025-11,1546.48,PLACE BELL - NOVOMBRE 2025.xlsx,1461.50,#7929 (OM),40506.35,+84.98,résumé du fichier étiqueté oct. par erreur; total correct
+2025-12,2513.85,"CONSILIDADO-DECEMBRE + 14-20.xlsx + DU 20-31 AVEC AJUSTEMENT (le ledger s'arrête à 914,88 h le 12 déc.)",2610.50,#8035 (2 OM),73544.88,-96.65,dernier mois de la pratique du registre de site
+2026-01,,plus aucun registre de site,1807.50,#8178 (2 OM),51503.58,,
+2026-02,,plus aucun registre de site,2170.50,#8341 (2 OM),60622.34,,
+2026-03,,plus aucun registre de site,2264.00,#8477 (2 OM),67419.66,,"+ ligne surcharge 0,30$/h sur 1 909 h = 572,70 $; taux ménage passe à 32,00 $/h"
+2026-04,,plus aucun registre de site,3114.25,#8602 (2 OM),88883.53,,"+ surcharge 0,30$/h sur 3 024,75 h = 907,43 $"
+2026-05,,plus aucun registre de site,2312.50,#8692 (2 OM),66843.71,,"+ surcharge 0,30$/h sur 2 318,50 h = 695,55 $"
+2026-06,,plus aucun registre de site,431.50,#8791 (2 Sylvain T),12123.79,,"+ surcharge 0,30$/h sur 431,50 h = 129,45 $; chute brutale"
