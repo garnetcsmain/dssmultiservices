@@ -1,0 +1,3 @@
+date,client,heures,taux_facture,taux_convenu,document,note
+2026-07-09,Ménagez-Vous,32.00,24.00,23.75,Facture QCS56 (2026-07-15),"4 employés x 8 h, code MAN, Place Bell 1950 rue Claude-Gagné, Laval"
+2026-08-04,Ménagez-Vous,32.00,-0.25,,Note de crédit NC15,"correction du taux vers 23,75 $/h convenu le 14 mai 2026 ; net 760,00 $"

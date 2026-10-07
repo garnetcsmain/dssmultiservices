@@ -1,0 +1,11 @@
+periode,type,libelle,heures_en_jeu,heures_acceptees_par_GDI,statut,note
+2025-01-19/31,Réclamation formelle,19-31 janv. 2025,92.50,84.50,Réglé,Heures manquantes ... (19-31 JAN).xlsx ; version retournée par L. Brunet
+2025-02-01/15,Réclamation formelle,1-15 févr. 2025,40.50,38.00,Réglé,Heures manquantes ... (01-15 FEV).xlsx ; version retournée par L. Brunet
+2025-02-16/28,Réclamation formelle,16-28 févr. 2025,0.00,0.00,Sans objet,"le fichier ne contient aucun onglet Place Bell (Centre Bell seul: 52,30 h)"
+2025-03-16/31,Réclamation formelle,16-31 mars 2025,0.00,0.00,Sans objet,"aucun onglet Place Bell (Centre Bell seul: 75,65 h réclamées, 74,50 acceptées)"
+2025-04-01/30,Réclamation formelle,1-30 avr. 2025,61.00,61.00,Réglé,accepté intégralement par GDI
+2025-05-01/30,Réclamation formelle,1-30 mai 2025,24.58,24.58,Réglé,accepté intégralement par GDI
+2025-07-13,Écart jamais réclamé,13 juil. 2025,8.10,0.00,Jamais réclamé,"QC 178,85 h vs GDI 170,75 h ; ~0,42-0,75 h retranchées par travailleur (pause repas). Aucun courriel de réclamation."
+2025-08-06,Tracé non enregistré,6 août 2025,4.00,0.00,Inconnu,"4 employés x 1 h, projet 'pbel' dans le suivi GDI 'heures payées V2025-10-23.xlsx' ; en sus des 796,75 h facturées"
+2025-10-21,Demande d'ajustement,21 oct. 2025,19.43,,Réponse non retrouvée,"3 employés (Y. Lozano, J. Quispe, A. Chaparro) ; feuille de temps surlignée jointe"
+2025-12,Restatement,déc. 2025 (relevé vs ledger),1598.97,,Non applicable,"le ledger s'est arrêté à 914,88 h ; le relevé consolidé de QC donne 2 513,85 h. GDI a facturé 2 610,50 h, donc l'écart a bien été facturé — c'est le registre QC qui était incomplet, pas la facturation."

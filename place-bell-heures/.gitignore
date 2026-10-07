@@ -1,0 +1,13 @@
+# Les 98 pièces originales (74 Mo) ne sont PAS versionnées : ce dépôt est PUBLIC et
+# elles contiennent des données personnelles — feuilles de temps signées à la main,
+# noms et codes de ~100 employés, taux et heures payées, et des mentions de statut de
+# permis de travail ("expiré", "n'existe pas au système").
+#
+# C'est aussi la pratique déjà établie dans ce dépôt : voir
+# comite-paritaire-archivo-real/README.md — "Los adjuntos (PDF de rapports, Excel de
+# horas) no se extrajeron ... el archivo original completo está en
+# QC-Maintenance-Email-Backup/".
+#
+# Les documents restent en local dans ce dossier, et _index.csv trace chaque pièce
+# jusqu'à son courriel d'origine dans l'archive.
+documents/
